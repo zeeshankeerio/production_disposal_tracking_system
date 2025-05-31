@@ -1,0 +1,26 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "headers": {
+        "cache-control": "public, max-age=0, must-revalidate"
+      }
+    }
+  ],
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://tehupaygyujwxbdygirq.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlaHVwYXlneXVqd3hiZHlnaXJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQwMTY4MjAsImV4cCI6MjA1OTU5MjgyMH0.piak3Iz6IqLDsIaJFx08n7_NPOsktGw_wjTS2ZiDHPc"
+  },
+  "build": {
+    "env": {
+      "SUPABASE_URL": "https://tehupaygyujwxbdygirq.supabase.co"
+    }
+  }
+} 

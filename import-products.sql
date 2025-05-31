@@ -1,0 +1,165 @@
+-- Import products from the product CSV list
+-- Run this after setup-database.sql to import all products
+
+-- First, create a temporary table to hold the CSV data
+CREATE TEMP TABLE temp_products (
+  id SERIAL PRIMARY KEY,
+  product_name TEXT NOT NULL,
+  category TEXT NOT NULL,
+  unit TEXT
+);
+
+-- Then insert the product data from the CSV (this is just a few examples, you'd insert all of them)
+-- For production, you might want to use a COPY command to import directly from a file
+INSERT INTO temp_products (product_name, category, unit) VALUES
+-- In Display/Itens em Exposição products
+('Peta', 'In Display/Itens em Exposição', 'piece'),
+('Rosca Caseira Frita', 'In Display/Itens em Exposição', 'piece'),
+('Rosca Trançada de Coco', 'In Display/Itens em Exposição', 'piece'),
+('Rosca Caracol com Coco', 'In Display/Itens em Exposição', 'piece'),
+('Rosca Caracol  com Crème', 'In Display/Itens em Exposição', 'piece'),
+('Rosca de Leite Conden com Coco', 'In Display/Itens em Exposição', 'piece'),
+('Rosca Goiana', 'In Display/Itens em Exposição', 'piece'),
+('Língua de Sogra', 'In Display/Itens em Exposição', 'piece'),
+('Marta Rocha', 'In Display/Itens em Exposição', 'piece'),
+('Pão com Queijo', 'In Display/Itens em Exposição', 'piece'),
+('Pão com Presunto e Queijo', 'In Display/Itens em Exposição', 'piece'),
+('Pão de Batata', 'In Display/Itens em Exposição', 'piece'),
+('Enroladinho de Queijo', 'In Display/Itens em Exposição', 'piece'),
+('Pão com Goiabada e Queijo', 'In Display/Itens em Exposição', 'piece'),
+('Bolo (Balcão)', 'In Display/Itens em Exposição', 'slice'),
+('Broa (Balcão)', 'In Display/Itens em Exposição', 'piece'),
+('Samantilha', 'In Display/Itens em Exposição', 'piece'),
+('Broa de Sal', 'In Display/Itens em Exposição', 'piece'),
+('Broa de Doce', 'In Display/Itens em Exposição', 'piece'),
+('Bolinho de Chuva', 'In Display/Itens em Exposição', 'piece'),
+('Sonho', 'In Display/Itens em Exposição', 'piece'),
+('Pão de Hambúrguer', 'In Display/Itens em Exposição', 'piece'),
+('Pão de Queijo Recheado', 'In Display/Itens em Exposição', 'piece'),
+('Pão de Queijo', 'In Display/Itens em Exposição', 'piece'),
+('Pão de Sal', 'In Display/Itens em Exposição', 'piece'),
+('Ferradura', 'In Display/Itens em Exposição', 'piece'),
+('Biscoito Frito', 'In Display/Itens em Exposição', 'piece'),
+('Pão de Ló', 'In Display/Itens em Exposição', 'piece'),
+('Pão de Mel', 'In Display/Itens em Exposição', 'piece'),
+('Folhado Nutella e Morango', 'In Display/Itens em Exposição', 'piece'),
+('Folhado Crème e Nutella', 'In Display/Itens em Exposição', 'piece'),
+('Folhado Romeu e Julieta', 'In Display/Itens em Exposição', 'piece'),
+('Croissant de Frango', 'In Display/Itens em Exposição', 'piece'),
+('Croissant Queijo e Azeitona', 'In Display/Itens em Exposição', 'piece'),
+('Croissant de Carne Moida', 'In Display/Itens em Exposição', 'piece'),
+('Croissant Natural', 'In Display/Itens em Exposição', 'piece'),
+
+-- Packaged/Embalado products
+('Bolo de Abacaxi', 'Packaged/Embalado', 'cake'),
+('Bolo de Laranja', 'Packaged/Embalado', 'cake'),
+('Bolo de Coco', 'Packaged/Embalado', 'cake'),
+('Bolo de Mandioca', 'Packaged/Embalado', 'cake'),
+('Bolo de Fubá', 'Packaged/Embalado', 'cake'),
+('Bolo de Ninho', 'Packaged/Embalado', 'cake'),
+('Bolo Mesclado', 'Packaged/Embalado', 'cake'),
+('Bolo de Trigo', 'Packaged/Embalado', 'cake'),
+('Bolo Furmiqueiro', 'Packaged/Embalado', 'cake'),
+('Mini Bolo de Banana', 'Packaged/Embalado', 'cake'),
+('Mini Bolo de Brigadeiro', 'Packaged/Embalado', 'cake'),
+('Mini Bolo de Cenoura', 'Packaged/Embalado', 'cake'),
+('Mini Bolo de Ninho', 'Packaged/Embalado', 'cake'),
+('Mini Bolo de Quebra Queixo', 'Packaged/Embalado', 'cake'),
+('Mini Bolo de Caçarola', 'Packaged/Embalado', 'cake'),
+('Mini Bolo de Pé de Moleque', 'Packaged/Embalado', 'cake'),
+('Biscoito de Polvilho', 'Packaged/Embalado', 'pack'),
+('Biscoito de Goiabada', 'Packaged/Embalado', 'pack'),
+('Biscoito de Coco com Gotas', 'Packaged/Embalado', 'pack'),
+('Biscoito de Coco', 'Packaged/Embalado', 'pack'),
+('Casadinho', 'Packaged/Embalado', 'pack'),
+('Pão Caseiro', 'Packaged/Embalado', 'loaf'),
+('Pão de Cebola', 'Packaged/Embalado', 'loaf'),
+('Pão Doce com Açúcar', 'Packaged/Embalado', 'loaf'),
+('Pão Doce Açúcar e Canela', 'Packaged/Embalado', 'loaf'),
+('Pão Doce com Creme e Açúcar', 'Packaged/Embalado', 'loaf'),
+('Pão Doce com Creme', 'Packaged/Embalado', 'loaf'),
+('Pão Doce com Coco Queimado', 'Packaged/Embalado', 'loaf'),
+('Pão Doce Caracol com Creme e Cereja', 'Packaged/Embalado', 'loaf'),
+('Pão Doce com Goiabada e Creme', 'Packaged/Embalado', 'loaf'),
+('Pão Doce com Chocolate', 'Packaged/Embalado', 'loaf'),
+('Pão Sovado', 'Packaged/Embalado', 'loaf'),
+('Pão Tatuzinho', 'Packaged/Embalado', 'loaf'),
+('Pão de Cachorro Quente', 'Packaged/Embalado', 'pack'),
+('Rosca Rainha', 'Packaged/Embalado', 'piece'),
+('Rosca Rei', 'Packaged/Embalado', 'piece'),
+('Rosca Rei com Gotas', 'Packaged/Embalado', 'piece'),
+('Rosca de Batata', 'Packaged/Embalado', 'piece'),
+('Rosca com Gotas de Chocolate', 'Packaged/Embalado', 'piece'),
+('Rosca Padokka', 'Packaged/Embalado', 'piece'),
+('Rosca de Creme e Queijo', 'Packaged/Embalado', 'piece'),
+('Rosca de Doce de Leite com Coco', 'Packaged/Embalado', 'piece'),
+('Rosca de Goiabada e Coco', 'Packaged/Embalado', 'piece'),
+('Rosca com Crème e Coco', 'Packaged/Embalado', 'piece'),
+('Rosca com Crème', 'Packaged/Embalado', 'piece'),
+
+-- Refrigerated/Refrigerado products
+('Pudim', 'Refrigerated/Refrigerado', 'piece'),
+('Mousse Morango', 'Refrigerated/Refrigerado', 'cup'),
+('Mousse Maracujá', 'Refrigerated/Refrigerado', 'cup'),
+('Bolo no Pote', 'Refrigerated/Refrigerado', 'cup'),
+('Bolo Confeitado', 'Refrigerated/Refrigerado', 'cake'),
+('Mini Bolo Confeitado', 'Refrigerated/Refrigerado', 'cake'),
+('Rocambole', 'Refrigerated/Refrigerado', 'piece'),
+('Brigadeiro', 'Refrigerated/Refrigerado', 'piece'),
+('Beijinho', 'Refrigerated/Refrigerado', 'piece'),
+('Bom Bom de Limao', 'Refrigerated/Refrigerado', 'piece'),
+('Pe de Moleque', 'Refrigerated/Refrigerado', 'piece'),
+('Cocada', 'Refrigerated/Refrigerado', 'piece'),
+('Bolodim', 'Refrigerated/Refrigerado', 'piece'),
+('Torta de Frango', 'Refrigerated/Refrigerado', 'slice'),
+('Sanduíche Natural', 'Refrigerated/Refrigerado', 'piece'),
+('Copo Napolitano', 'Refrigerated/Refrigerado', 'cup'),
+('Caçarola Italiana', 'Refrigerated/Refrigerado', 'piece'),
+('Caçarola Ninho', 'Refrigerated/Refrigerado', 'piece'),
+('Caçarola Padaria', 'Refrigerated/Refrigerado', 'piece'),
+('Caçarola Coco e Queijo', 'Refrigerated/Refrigerado', 'piece'),
+
+-- Savory Snacks/Salgados products
+('Coxinha', 'Savory Snacks/Salgados', 'piece'),
+('Coxinha com Catupiry', 'Savory Snacks/Salgados', 'piece'),
+('Risole', 'Savory Snacks/Salgados', 'piece'),
+('Kibe', 'Savory Snacks/Salgados', 'piece'),
+('Empadinha', 'Savory Snacks/Salgados', 'piece'),
+('Esfirra de Frango', 'Savory Snacks/Salgados', 'piece'),
+('Esfirra de Carne', 'Savory Snacks/Salgados', 'piece'),
+('Mini Pizza de Frango com Catupiry', 'Savory Snacks/Salgados', 'piece'),
+('Mini Pizza de Queijo', 'Savory Snacks/Salgados', 'piece'),
+('Mini Pizza de Hamburger', 'Savory Snacks/Salgados', 'piece'),
+('Mini Pizza Presunto e Queijo', 'Savory Snacks/Salgados', 'piece'),
+('Pastel Assado de Frango', 'Savory Snacks/Salgados', 'piece'),
+('Bolinho de Mandioca', 'Savory Snacks/Salgados', 'piece'),
+('Enroladinho de Salsicha', 'Savory Snacks/Salgados', 'piece'),
+('Cachorro Quente Assado', 'Savory Snacks/Salgados', 'piece'),
+('Espetinho de Frango', 'Savory Snacks/Salgados', 'piece'),
+('Massa de Pastel', 'Savory Snacks/Salgados', 'piece'),
+('Massa de Mini Pastel', 'Savory Snacks/Salgados', 'piece'),
+('Croquete de Presunto e Queijo', 'Savory Snacks/Salgados', 'piece'),
+('Mini Pastel', 'Savory Snacks/Salgados', 'piece'),
+('Pastel Padokkinha', 'Savory Snacks/Salgados', 'piece'),
+('Hamburgão', 'Savory Snacks/Salgados', 'piece'),
+('Pão de Pizza', 'Savory Snacks/Salgados', 'piece'),
+('Mini Pão de Pizza', 'Savory Snacks/Salgados', 'piece'),
+('Mini Coxinha', 'Savory Snacks/Salgados', 'piece'),
+('Mini Risole', 'Savory Snacks/Salgados', 'piece'),
+('Mini Bolinha de Queijo', 'Savory Snacks/Salgados', 'piece'),
+('Mini Kibe', 'Savory Snacks/Salgados', 'piece');
+
+-- Now import the products into the main products table with generated UUIDs
+INSERT INTO public.products (name, category, unit, description)
+SELECT 
+  product_name,
+  category,
+  COALESCE(unit, 'piece'),  -- Use the unit if provided, otherwise default to 'piece'
+  'Produto ' || product_name  -- Simple description, you can update these later
+FROM temp_products;
+
+-- Clean up
+DROP TABLE temp_products;
+
+-- Confirm the import
+SELECT COUNT(*) FROM public.products; 

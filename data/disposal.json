@@ -1,0 +1,210 @@
+[
+  {
+    "staff_name": "Luiza Costa",
+    "date": "2025-04-17T14:43:12.529Z",
+    "product_id": "14f0a003-4d49-493a-addd-258f3e8c8e93",
+    "product_name": "Brigadeiro",
+    "quantity": 8,
+    "shift": "afternoon",
+    "reason": "Return/Devoluções de Clientes",
+    "notes": "Sample disposal entry",
+    "id": "472e8849-c144-4662-b891-cfe19b7c3a9c"
+  },
+  {
+    "staff_name": "Carlos Mendes",
+    "date": "2025-04-17T14:43:12.526Z",
+    "product_id": "14f0a003-4d49-493a-addd-258f3e8c8e93",
+    "product_name": "Brigadeiro",
+    "quantity": 19,
+    "shift": "morning",
+    "reason": "Unsold/Não Vendido",
+    "id": "81b4fcb0-1a5b-47c9-8b3e-5d80bf6bf497"
+  },
+  {
+    "staff_name": "Luiza Costa",
+    "date": "2025-05-06T14:43:12.524Z",
+    "product_id": "131640ea-4110-4d8d-b196-17c40674c15e",
+    "product_name": "Torta de Limão",
+    "quantity": 19,
+    "shift": "afternoon",
+    "reason": "Damaged/Danificados",
+    "id": "46c446d7-1bec-49f7-b5fc-63d04f8ae0ca"
+  },
+  {
+    "staff_name": "Carlos Mendes",
+    "date": "2025-04-13T14:43:12.522Z",
+    "product_id": "131640ea-4110-4d8d-b196-17c40674c15e",
+    "product_name": "Torta de Limão",
+    "quantity": 12,
+    "shift": "morning",
+    "reason": "Expired/Vencidos",
+    "id": "a77714f2-f8c5-41d8-afb7-1b783b01e4f2"
+  },
+  {
+    "staff_name": "Luiza Costa",
+    "date": "2025-05-06T14:43:12.517Z",
+    "product_id": "9085d2a6-2a9a-48c8-a1e4-19896173d93b",
+    "product_name": "Pão de Queijo",
+    "quantity": 5,
+    "shift": "afternoon",
+    "reason": "Return/Devoluções de Clientes",
+    "notes": "Sample disposal entry",
+    "id": "7ecf5fe4-71af-41d7-a808-1ec1ca274288"
+  },
+  {
+    "staff_name": "Carlos Mendes",
+    "date": "2025-04-24T14:43:12.515Z",
+    "product_id": "9085d2a6-2a9a-48c8-a1e4-19896173d93b",
+    "product_name": "Pão de Queijo",
+    "quantity": 10,
+    "shift": "morning",
+    "reason": "Unsold/Não Vendido",
+    "id": "7dab93ee-391a-40e3-bae3-b0805993b5e8"
+  },
+  {
+    "staff_name": "Luiza Costa",
+    "date": "2025-04-27T14:43:12.512Z",
+    "product_id": "81370d8b-e5b6-4887-b508-f47e9830f133",
+    "product_name": "Bolo de Cenoura",
+    "quantity": 16,
+    "shift": "afternoon",
+    "reason": "Expired/Vencidos",
+    "notes": "Sample disposal entry",
+    "id": "4097e46c-d9fa-469d-a818-be53bccb7472"
+  },
+  {
+    "staff_name": "Carlos Mendes",
+    "date": "2025-04-25T14:43:12.510Z",
+    "product_id": "81370d8b-e5b6-4887-b508-f47e9830f133",
+    "product_name": "Bolo de Cenoura",
+    "quantity": 17,
+    "shift": "morning",
+    "reason": "Quality Issues/Problemas de Qualidade",
+    "notes": "Sample disposal entry",
+    "id": "7c7b3c08-f6e7-428b-8480-c320294a2ca8"
+  },
+  {
+    "staff_name": "Luiza Costa",
+    "date": "2025-04-29T14:43:12.508Z",
+    "product_id": "14735a27-6528-4600-a198-5df048ca479a",
+    "product_name": "Esfiha",
+    "quantity": 15,
+    "shift": "afternoon",
+    "reason": "Damaged/Danificados",
+    "id": "f6610a57-15b8-4f55-9328-bd4f2af5dbaf"
+  },
+  {
+    "staff_name": "Carlos Mendes",
+    "date": "2025-04-25T14:43:12.505Z",
+    "product_id": "14735a27-6528-4600-a198-5df048ca479a",
+    "product_name": "Esfiha",
+    "quantity": 10,
+    "shift": "morning",
+    "reason": "Unsold/Não Vendido",
+    "notes": "Sample disposal entry",
+    "id": "a2f3e200-1ac5-4e6c-b490-049d478984ff"
+  },
+  {
+    "staff_name": "Luiza Costa",
+    "date": "2025-04-19T14:43:12.499Z",
+    "product_id": "71f01f75-27b8-41fb-a745-d95cec33379f",
+    "product_name": "Coxinha",
+    "quantity": 23,
+    "shift": "afternoon",
+    "reason": "Unsold/Não Vendido",
+    "id": "f12bd336-57df-4e57-804d-aed25b7731c6"
+  },
+  {
+    "staff_name": "Carlos Mendes",
+    "date": "2025-04-27T14:43:12.492Z",
+    "product_id": "71f01f75-27b8-41fb-a745-d95cec33379f",
+    "product_name": "Coxinha",
+    "quantity": 23,
+    "shift": "morning",
+    "reason": "Damaged/Danificados",
+    "id": "36edc5fa-65b6-4690-b079-ffe16ba62875"
+  },
+  {
+    "staff_name": "Luiza Costa",
+    "date": "2025-04-24T14:43:12.490Z",
+    "product_id": "1dd604e3-2068-4d04-aeea-b08f82185573",
+    "product_name": "Bolo de Chocolate",
+    "quantity": 14,
+    "shift": "afternoon",
+    "reason": "Quality Issues/Problemas de Qualidade",
+    "id": "5f9d22e7-5a7b-443b-94c0-61a5a3301595"
+  },
+  {
+    "staff_name": "Carlos Mendes",
+    "date": "2025-04-13T14:43:12.487Z",
+    "product_id": "1dd604e3-2068-4d04-aeea-b08f82185573",
+    "product_name": "Bolo de Chocolate",
+    "quantity": 24,
+    "shift": "morning",
+    "reason": "Damaged/Danificados",
+    "id": "e20d235b-b5a1-4a1c-8244-d70febfbc44d"
+  },
+  {
+    "staff_name": "Luiza Costa",
+    "date": "2025-04-21T14:43:12.483Z",
+    "product_id": "372947cc-7b9c-4aa9-a295-4163801ec0b8",
+    "product_name": "Croissant",
+    "quantity": 5,
+    "shift": "afternoon",
+    "reason": "Expired/Vencidos",
+    "notes": "Sample disposal entry",
+    "id": "c692ecde-a18a-4d70-adff-fd45e7209b62"
+  },
+  {
+    "staff_name": "Carlos Mendes",
+    "date": "2025-04-22T14:43:12.480Z",
+    "product_id": "372947cc-7b9c-4aa9-a295-4163801ec0b8",
+    "product_name": "Croissant",
+    "quantity": 24,
+    "shift": "morning",
+    "reason": "Return/Devoluções de Clientes",
+    "notes": "Sample disposal entry",
+    "id": "b783685b-6d2a-4c06-aff0-40102a796a76"
+  },
+  {
+    "staff_name": "Luiza Costa",
+    "date": "2025-04-22T14:43:12.477Z",
+    "product_id": "ffcec4ad-8746-4b28-9b59-9c08d78c8663",
+    "product_name": "Pão de Forma",
+    "quantity": 22,
+    "shift": "afternoon",
+    "reason": "Return/Devoluções de Clientes",
+    "id": "5051dac6-8a3f-4299-bf5c-b6cdd55b7b00"
+  },
+  {
+    "staff_name": "Carlos Mendes",
+    "date": "2025-04-22T14:43:12.474Z",
+    "product_id": "ffcec4ad-8746-4b28-9b59-9c08d78c8663",
+    "product_name": "Pão de Forma",
+    "quantity": 9,
+    "shift": "morning",
+    "reason": "Expired/Vencidos",
+    "notes": "Sample disposal entry",
+    "id": "e7bd86ab-23dd-43b1-a154-46e0b4bfcc74"
+  },
+  {
+    "staff_name": "Luiza Costa",
+    "date": "2025-05-08T14:43:12.472Z",
+    "product_id": "afd4c392-c7d4-4f04-b867-a4562d746851",
+    "product_name": "Pão Francês",
+    "quantity": 23,
+    "shift": "afternoon",
+    "reason": "Return/Devoluções de Clientes",
+    "id": "f5efd600-c6ef-44bf-9a05-abe26ea809bb"
+  },
+  {
+    "staff_name": "Carlos Mendes",
+    "date": "2025-04-22T14:43:12.470Z",
+    "product_id": "afd4c392-c7d4-4f04-b867-a4562d746851",
+    "product_name": "Pão Francês",
+    "quantity": 23,
+    "shift": "morning",
+    "reason": "Return/Devoluções de Clientes",
+    "id": "ce6c3f0a-a1ae-43c4-9a62-1c8473770db4"
+  }
+]

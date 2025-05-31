@@ -1,0 +1,565 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { useForm } from "react-hook-form"
+import { zodResolver } from "@hookform/resolvers/zod"
+import * as z from "zod"
+import { format } from "date-fns"
+import { CalendarIcon, InfoIcon, AlertTriangleIcon, Plus, Trash2 } from "lucide-react"
+
+import { Button } from "@/components/ui/button"
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
+import { useData } from "@/components/providers/data-provider"
+import { DisposalEntry, Shift } from "@/lib/types"
+import { useToast } from "@/components/ui/use-toast"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Textarea } from "@/components/ui/textarea"
+import { Badge } from "@/components/ui/badge"
+import { Combobox, ComboboxOption } from "@/components/ui/combobox"
+import { SimpleDatePicker } from "@/components/ui/simple-date-picker"
+import { DatePickerWrapper } from "@/components/ui/date-picker-wrapper"
+import { DatePickerWrapper as ClientDatePicker } from "@/components/ui/client-pickers"
+import { prepareDateForSubmission } from "@/lib/date-utils"
+
+// Common disposal reasons
+const DISPOSAL_REASONS = [
+  "Expired / Past use-by date",
+  "Quality issues / Failed inspection",
+  "Damaged / Broken during handling",
+  "Contamination / Food safety concern",
+  "Overproduction / Excess inventory",
+  "Customer return",
+  "Equipment malfunction",
+  "Other"
+]
+
+const disposalSchema = z.object({
+  product_name: z.string().min(1, "Product name is required"),
+  quantity: z.number().min(1, "Quantity must be greater than 0").max(10000, "Quantity seems too high"),
+  date: z.date({
+    required_error: "Date is required",
+  }),
+  shift: z.enum(["morning", "afternoon", "night"] as const, {
+    required_error: "Shift is required",
+  }),
+  staff_name: z.string().min(1, "Staff name is required"),
+  reason: z.string().min(1, "At least one reason is required"),
+  notes: z.string().optional(),
+})
+
+type DisposalFormValues = z.infer<typeof disposalSchema>
+
+// Add cart entry type
+type CartEntry = {
+  id: string;
+  product_name: string;
+  quantity: number;
+  reason: string;
+  notes?: string;
+}
+
+type CommonFields = {
+  date: Date;
+  shift: "morning" | "afternoon" | "night";
+  staff_name: string;
+}
+
+export function DisposalForm() {
+  const { addDisposalEntry, products, refreshData, isLoading: isDataLoading } = useData()
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState<string | null>(null)
+  const [selectedReasons, setSelectedReasons] = useState<string[]>([])
+  const [cartEntries, setCartEntries] = useState<CartEntry[]>([])
+  const [commonFields, setCommonFields] = useState<CommonFields>({
+    date: new Date(),
+    shift: "morning",
+    staff_name: "",
+  })
+  const { toast } = useToast()
+
+  const form = useForm<DisposalFormValues>({
+    resolver: zodResolver(disposalSchema),
+    defaultValues: {
+      product_name: "",
+      quantity: 0,
+      date: new Date(),
+      shift: "morning",
+      staff_name: "",
+      reason: "",
+      notes: "",
+    },
+  })
+
+  // Update selected product when product_name changes
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === "product_name") {
+        setSelectedProduct(value.product_name || null)
+      }
+      if (name === "reason") {
+        const reasons = value.reason ? value.reason.split(", ").filter(Boolean) : []
+        setSelectedReasons(reasons)
+      }
+      // Update common fields when they change
+      if (name === "date" || name === "shift" || name === "staff_name") {
+        setCommonFields(prev => ({
+          ...prev,
+          [name]: value[name]
+        }))
+      }
+    })
+    return () => subscription.unsubscribe()
+  }, [form.watch])
+
+  const addToCart = (data: DisposalFormValues) => {
+    const newEntry: CartEntry = {
+      id: Date.now().toString(),
+      product_name: data.product_name,
+      quantity: data.quantity,
+      reason: data.reason,
+      notes: data.notes,
+    }
+    setCartEntries([...cartEntries, newEntry])
+    
+    // Reset only product-specific fields
+    form.reset({
+      ...form.getValues(),
+      product_name: "",
+      quantity: 0,
+      reason: "",
+      notes: "",
+    })
+    
+    // Clear selected product and reset UI state
+    setSelectedProduct(null)
+    setSelectedReasons([])
+    
+    toast({
+      title: "Added to Cart",
+      description: "Entry added to cart. You can add more entries or submit all at once.",
+    })
+  }
+
+  const handleReasonChange = (value: string, index: number) => {
+    const newReasons = [...selectedReasons]
+    newReasons[index] = value
+    setSelectedReasons(newReasons)
+    
+    // Update form value with comma-separated string
+    const combinedReasons = newReasons.filter(Boolean).join(", ")
+    form.setValue("reason", combinedReasons)
+  }
+
+  const removeFromCart = (id: string) => {
+    setCartEntries(cartEntries.filter(entry => entry.id !== id))
+    toast({
+      title: "Removed from Cart",
+      description: "Entry removed from cart.",
+    })
+  }
+
+  async function onSubmit(data: DisposalFormValues) {
+    try {
+      setIsSubmitting(true)
+      
+      // Find the product to get its ID
+      const selectedProductData = products.find(p => p.name === data.product_name)
+      
+      if (!selectedProductData) {
+        toast({
+          title: "Error",
+          description: "Selected product not found. Please try again.",
+          variant: "destructive",
+        })
+        setIsSubmitting(false)
+        return
+      }
+      
+      // Add to cart instead of submitting directly
+      addToCart(data)
+    } catch (error) {
+      console.error("Form submission error:", error)
+      toast({
+        title: "Error",
+        description: "Failed to add entry to cart. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const submitCart = async () => {
+    if (cartEntries.length === 0) {
+      toast({
+        title: "Error",
+        description: "Cart is empty. Please add entries first.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!commonFields.staff_name) {
+      toast({
+        title: "Error",
+        description: "Staff name is required.",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      setIsSubmitting(true)
+      
+      // Submit each entry in the cart
+      for (const entry of cartEntries) {
+        const selectedProductData = products.find(p => p.name === entry.product_name)
+        
+        if (!selectedProductData) {
+          throw new Error(`Product not found: ${entry.product_name}`)
+        }
+        
+        const submissionEntry: DisposalEntry = {
+          ...entry,
+          ...commonFields,
+          product_id: selectedProductData.id,
+          date: commonFields.date,
+        }
+        
+        await addDisposalEntry(submissionEntry)
+      }
+      
+      // Clear cart after successful submission
+      setCartEntries([])
+      
+      // Refresh data to update the UI
+      await refreshData();
+      
+      toast({
+        title: "Success",
+        description: `${cartEntries.length} disposal entries added successfully`,
+      })
+    } catch (error) {
+      console.error("Cart submission error:", error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to submit entries. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Get the selected product details
+  const selectedProductDetails = selectedProduct 
+    ? products.find(p => p.name === selectedProduct) 
+    : null
+
+  return (
+    <Card className="w-full">
+      <CardHeader>
+        <CardTitle>Disposal Entry</CardTitle>
+        <CardDescription>Record new disposal entries</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            {/* Common Fields Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Common Information</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <FormField
+                control={form.control}
+                name="date"
+                render={({ field }) => (
+                  <FormItem className="flex flex-col">
+                    <FormLabel>Date</FormLabel>
+                    <FormControl>
+                      <ClientDatePicker
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select disposal date"
+                        disableFutureDates={true}
+                        fromYear={2020}
+                        toYear={new Date().getFullYear()}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="shift"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Shift</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select shift" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="morning">Morning</SelectItem>
+                        <SelectItem value="afternoon">Afternoon</SelectItem>
+                        <SelectItem value="night">Night</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="staff_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Staff Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Enter staff name" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              </div>
+            </div>
+
+            {/* Product Entry Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Add Product</h3>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                  <div className="md:col-span-4">
+                    <FormField
+                      control={form.control}
+                      name="product_name"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Product Name</FormLabel>
+                          <FormControl>
+                            <Combobox
+                              options={products.map(product => ({
+                                value: product.name,
+                                label: product.name,
+                                badge: product.category
+                              }))}
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              placeholder="Select a product"
+                              emptyMessage="No products found."
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <FormField
+                      control={form.control}
+                      name="quantity"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Quantity</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              placeholder="Enter quantity"
+                              {...field}
+                              onChange={(e) => field.onChange(Number(e.target.value))}
+                              min={1}
+                              max={10000}
+                            />
+                          </FormControl>
+                          {selectedProductDetails && (
+                            <FormDescription>
+                              Unit: {selectedProductDetails.unit}
+                            </FormDescription>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="md:col-span-5">
+                    <FormField
+                      control={form.control}
+                      name="reason"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Reasons (up to 3)</FormLabel>
+                          <FormControl>
+                            <div className="space-y-2">
+                              {[0, 1, 2].map((index) => (
+                                <Select
+                                  key={index}
+                                  onValueChange={(value) => handleReasonChange(value, index)}
+                                  value={selectedReasons[index] || ""}
+                                >
+                                  <SelectTrigger>
+                                    <SelectValue placeholder={`Reason ${index + 1}`} />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {DISPOSAL_REASONS.map((reason) => (
+                                      <SelectItem 
+                                        key={reason} 
+                                        value={reason}
+                                        disabled={selectedReasons.includes(reason) && selectedReasons[index] !== reason}
+                                      >
+                                        {reason}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              ))}
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="md:col-span-1">
+                    <Button
+                      type="submit"
+                      className="w-full h-10"
+                      disabled={isSubmitting || isDataLoading}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+            </div>
+
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Additional Notes (Optional)</FormLabel>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="Enter any additional details about this disposal" 
+                          className="min-h-[80px]"
+                      {...field} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+              </div>
+            </div>
+
+            {/* Submit Cart Button */}
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full md:w-auto"
+                disabled={isSubmitting || isDataLoading || cartEntries.length === 0}
+                onClick={submitCart}
+              >
+                {isSubmitting ? "Submitting..." : `Submit All Entries (${cartEntries.length})`}
+              </Button>
+            </div>
+          </form>
+        </Form>
+
+        {/* Cart Entries */}
+        {cartEntries.length > 0 && (
+          <div className="mt-8 space-y-4">
+            <h3 className="text-lg font-semibold">Cart Entries</h3>
+            <div className="space-y-2">
+              {cartEntries.map((entry) => (
+                <div
+                  key={entry.id}
+                  className="flex items-center justify-between p-3 bg-muted rounded-lg"
+                >
+                  <div className="flex-1">
+                    <p className="font-medium">{entry.product_name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {entry.quantity} units
+                    </p>
+                    <div className="text-sm text-muted-foreground">
+                      <p>Reasons:</p>
+                      <ul className="list-disc list-inside">
+                        {entry.reason.split(", ").map((reason, index) => (
+                          <li key={index}>{reason}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    {entry.notes && (
+                      <p className="text-sm text-muted-foreground">
+                        Notes: {entry.notes}
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => removeFromCart(entry.id)}
+                    disabled={isSubmitting}
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+            {selectedProductDetails && (
+          <Alert className="mt-6">
+                <InfoIcon className="h-4 w-4" />
+                <AlertTitle>Product Information</AlertTitle>
+                <AlertDescription>
+                  {selectedProductDetails.description || "No description available"}
+                </AlertDescription>
+              </Alert>
+            )}
+
+        <Alert variant="destructive" className="mt-6">
+              <AlertTriangleIcon className="h-4 w-4" />
+              <AlertTitle>Warning</AlertTitle>
+              <AlertDescription>
+                Disposing of products should be done carefully and in accordance with company policies.
+                Please ensure all information is accurate.
+              </AlertDescription>
+            </Alert>
+      </CardContent>
+    </Card>
+  )
+}
+
