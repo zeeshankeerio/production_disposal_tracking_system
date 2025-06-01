@@ -83,8 +83,21 @@ export function Dashboard() {
     if (!dateRange.from || !dateRange.to || !productionEntries.length) return [];
 
     return productionEntries.filter((entry) => {
-      const entryDate = parseISO(entry.date)
-      return isWithinInterval(entryDate, {
+      // 1. Capture potentially undefined value
+      const rawDate = entry.date;
+      
+      // 2. Define a safe/fallback default
+      const safeDate = (rawDate !== undefined && rawDate !== null)
+        ? new Date(rawDate)
+        : new Date(); // Default to current date
+      
+      // 3. Validate the date
+      if (isNaN(safeDate.getTime())) {
+        console.warn("Invalid production date:", rawDate);
+        return false;
+      }
+      
+      return isWithinInterval(safeDate, {
         start: dateRange.from as Date,
         end: dateRange.to as Date,
       })
@@ -95,8 +108,21 @@ export function Dashboard() {
     if (!dateRange.from || !dateRange.to || !disposalEntries.length) return [];
 
     return disposalEntries.filter((entry) => {
-      const entryDate = parseISO(entry.date)
-      return isWithinInterval(entryDate, {
+      // 1. Capture potentially undefined value
+      const rawDate = entry.date;
+      
+      // 2. Define a safe/fallback default
+      const safeDate = (rawDate !== undefined && rawDate !== null)
+        ? new Date(rawDate)
+        : new Date(); // Default to current date
+      
+      // 3. Validate the date
+      if (isNaN(safeDate.getTime())) {
+        console.warn("Invalid disposal date:", rawDate);
+        return false;
+      }
+      
+      return isWithinInterval(safeDate, {
         start: dateRange.from as Date,
         end: dateRange.to as Date,
       })
@@ -173,8 +199,8 @@ export function Dashboard() {
     // Production by day
     const productionByDay = filteredProduction.reduce(
       (acc, entry) => {
-        const date = entry.date
-        acc[date] = (acc[date] || 0) + entry.quantity
+        const dateStr = typeof entry.date === 'string' ? entry.date : format(entry.date, "yyyy-MM-dd")
+        acc[dateStr] = (acc[dateStr] || 0) + entry.quantity
         return acc
       },
       {} as Record<string, number>,
@@ -183,8 +209,8 @@ export function Dashboard() {
     // Disposal by day
     const disposalByDay = filteredDisposal.reduce(
       (acc, entry) => {
-        const date = entry.date
-        acc[date] = (acc[date] || 0) + entry.quantity
+        const dateStr = typeof entry.date === 'string' ? entry.date : format(entry.date, "yyyy-MM-dd")
+        acc[dateStr] = (acc[dateStr] || 0) + entry.quantity
         return acc
       },
       {} as Record<string, number>,
@@ -197,14 +223,14 @@ export function Dashboard() {
 
     const last7DaysProduction = filteredProduction
       .filter((entry) => {
-        const entryDate = parseISO(entry.date)
+        const entryDate = typeof entry.date === 'string' ? parseISO(entry.date) : entry.date
         return isWithinInterval(entryDate, { start: last7Days, end: today })
       })
       .reduce((sum, entry) => sum + entry.quantity, 0)
 
     const previous7DaysProduction = filteredProduction
       .filter((entry) => {
-        const entryDate = parseISO(entry.date)
+        const entryDate = typeof entry.date === 'string' ? parseISO(entry.date) : entry.date
         return isWithinInterval(entryDate, { start: previous7Days, end: last7Days })
       })
       .reduce((sum, entry) => sum + entry.quantity, 0)
@@ -216,14 +242,14 @@ export function Dashboard() {
 
     const last7DaysDisposal = filteredDisposal
       .filter((entry) => {
-        const entryDate = parseISO(entry.date)
+        const entryDate = typeof entry.date === 'string' ? parseISO(entry.date) : entry.date
         return isWithinInterval(entryDate, { start: last7Days, end: today })
       })
       .reduce((sum, entry) => sum + entry.quantity, 0)
 
     const previous7DaysDisposal = filteredDisposal
       .filter((entry) => {
-        const entryDate = parseISO(entry.date)
+        const entryDate = typeof entry.date === 'string' ? parseISO(entry.date) : entry.date
         return isWithinInterval(entryDate, { start: previous7Days, end: last7Days })
       })
       .reduce((sum, entry) => sum + entry.quantity, 0)
@@ -289,15 +315,15 @@ export function Dashboard() {
 
   // Check for database setup errors - AFTER all hooks have been called
   const isDatabaseSetupError = error && (
-    error.message.includes("table") || 
-    error.message.includes("doesn't exist") ||
-    error.message.includes("not exist") ||
-    error.message.includes("relation")
+    error.includes("table") || 
+    error.includes("doesn't exist") ||
+    error.includes("not exist") ||
+    error.includes("relation")
   )
 
   // If there's a database setup error, show the setup guide
   if (isDatabaseSetupError) {
-    return <DatabaseSetupGuide errorMessage={error.message} />
+    return <DatabaseSetupGuide errorMessage={error} />
   }
 
   // Show general error message for other errors
@@ -306,7 +332,7 @@ export function Dashboard() {
       <Alert variant="destructive" className="my-8">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{error.message}</AlertDescription>
+        <AlertDescription>{error}</AlertDescription>
       </Alert>
     )
   }

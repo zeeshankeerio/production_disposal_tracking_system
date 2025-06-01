@@ -17,13 +17,19 @@ export function cn(...inputs: ClassValue[]) {
  * @returns Formatted date string
  */
 export function formatDate(
-  dateString: string, 
+  dateString: string | Date | undefined | null, 
   formatType: 'date' | 'time' | 'datetime' | string = 'date'
 ): string {
-  if (!dateString) return ""
+  if (!dateString) return "No date"
   
   try {
-    const date = new Date(dateString)
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.warn("Invalid date:", dateString)
+      return "Invalid date"
+    }
     
     // Handle predefined format types
     if (formatType === 'date') {
@@ -49,7 +55,7 @@ export function formatDate(
     return format(date, formatType || UI_CONFIG?.DATE_FORMAT || 'PPP')
   } catch (error) {
     console.error("Error formatting date:", error)
-    return dateString
+    return "Invalid date"
   }
 }
 

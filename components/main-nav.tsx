@@ -5,16 +5,21 @@ import { usePathname } from "next/navigation"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Database, LayoutDashboard, FileText, Package } from "lucide-react"
+import { Database, LayoutDashboard, Package, PackagePlus, PackageMinus } from "lucide-react"
 
 export function MainNav() {
   const pathname = usePathname()
 
   const navItems = [
     {
-      href: "/entries",
-      label: "Entries",
-      icon: FileText,
+      href: "/production",
+      label: "Production",
+      icon: PackagePlus,
+    },
+    {
+      href: "/disposal",
+      label: "Disposal",
+      icon: PackageMinus,
     },
     {
       href: "/dashboard",

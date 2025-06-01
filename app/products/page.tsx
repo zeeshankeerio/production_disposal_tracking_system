@@ -155,7 +155,7 @@ export default function ProductsPage() {
   }
   
   return (
-    <div className="container mx-auto py-10 space-y-8">
+    <div className="w-full px-4 py-10 space-y-8">
       <Breadcrumb 
         items={[
           { title: "Dashboard", href: "/dashboard" },

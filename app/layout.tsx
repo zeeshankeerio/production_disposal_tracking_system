@@ -31,7 +31,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <DataProvider>
-            <main>{children}</main>
+            <main className="w-full min-h-screen">{children}</main>
             <Toaster />
           </DataProvider>
         </ThemeProvider>

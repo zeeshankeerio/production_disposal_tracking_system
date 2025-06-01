@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ProductionForm } from "@/components/production-form"
 import { useData } from "@/components/providers/data-provider"
 import { Button } from "@/components/ui/button"
@@ -11,9 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { DateRange } from "react-day-picker"
 import { format, subDays } from "date-fns"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Search, Filter, RefreshCw, FileText, BarChart3, PieChart as PieChartIcon } from "lucide-react"
+import { Search, Filter, RefreshCw, FileText } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import { ProductionEntry } from "@/lib/types"
@@ -21,6 +20,7 @@ import { PageRecentEntries } from "@/components/page-recent-entries"
 import { EntriesListView } from "@/components/entries-list-view"
 import { CopyrightFooter } from "@/components/copyright-footer"
 import { QuickNav } from "@/components/quick-nav"
+import { EntryDetailsView } from "@/components/entry-details-view"
 
 // Custom tooltip component
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -52,7 +52,6 @@ export default function ProductionPage() {
   })
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const [activeTab, setActiveTab] = useState("overview")
   const { toast } = useToast()
   
   // Set mounted state after initial render
@@ -86,38 +85,8 @@ export default function ProductionPage() {
   // Calculate production statistics
   const totalProduction = filteredEntries.reduce((sum, entry) => sum + entry.quantity, 0)
   
-  // Group production by category
-  const productionByCategory = filteredEntries.reduce((acc, entry) => {
-    const product = products.find(p => p.name === entry.product_name)
-    const category = product?.category || "Uncategorized"
-    if (!acc[category]) {
-      acc[category] = 0
-    }
-    acc[category] += entry.quantity
-    return acc
-  }, {} as Record<string, number>)
-  
-  // Convert to array for chart
-  const categoryChartData = Object.entries(productionByCategory).map(([name, value]) => ({
-    name,
-    value
-  }))
-  
-  // Group production by shift
-  const productionByShift = filteredEntries.reduce((acc, entry) => {
-    const shift = entry.shift
-    if (!acc[shift]) {
-      acc[shift] = 0
-    }
-    acc[shift] += entry.quantity
-    return acc
-  }, {} as Record<string, number>)
-  
-  // Convert to array for chart
-  const shiftChartData = Object.entries(productionByShift).map(([name, value]) => ({
-    name,
-    value
-  }))
+  // Get unique products count
+  const uniqueProducts = new Set(filteredEntries.map(entry => entry.product_name)).size
   
   // Group production by date
   const productionByDate = filteredEntries.reduce((acc, entry) => {
@@ -188,9 +157,6 @@ export default function ProductionPage() {
     })
   }
   
-  // Chart colors
-  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8']
-  
   if (!mounted) {
     return (
       <div className="container py-6 space-y-6">
@@ -205,8 +171,7 @@ export default function ProductionPage() {
             <Skeleton className="h-10 w-[200px]" />
           </div>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Skeleton className="h-[120px] w-full" />
+        <div className="grid gap-4 md:grid-cols-2">
           <Skeleton className="h-[120px] w-full" />
           <Skeleton className="h-[120px] w-full" />
         </div>
@@ -216,7 +181,7 @@ export default function ProductionPage() {
   }
   
   return (
-    <div className="container mx-auto py-10 space-y-8">
+    <div className="w-full px-4 py-10 space-y-8">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Production Management</h2>
@@ -249,266 +214,91 @@ export default function ProductionPage() {
       
       <QuickNav />
       
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="charts">Charts</TabsTrigger>
-          <TabsTrigger value="all-entries">All Entries</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-8 md:grid-cols-2">
-            <div className="space-y-8">
-              <Card className="transition-all hover:shadow-md dark:shadow-none dark:hover:shadow-none dark:border-border/50">
-                <CardHeader>
-                  <CardTitle>Add New Production Entry</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ProductionForm />
-                </CardContent>
-              </Card>
-              
-              <Card className="transition-all hover:shadow-md dark:shadow-none dark:hover:shadow-none dark:border-border/50">
-                <CardHeader>
-                  <CardTitle>Production Statistics</CardTitle>
-                  <CardDescription>
-                    Overview of your production data
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium">Total Production</h3>
-                      <p className="text-2xl font-bold">{totalProduction}</p>
-                    </div>
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium">Products</h3>
-                      <p className="text-2xl font-bold">{Object.keys(productionByCategory).length}</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              
-              <div className="hidden md:block">
-                <PageRecentEntries
-                  key={`production-entries-${productionEntries.length}`}
-                  entries={sortedEntries.slice(0, 5)}
-                  title="Recent Production Entries"
-                  description="Latest production records"
-                  type="production"
-                  maxEntries={5}
-                />
+      <div className="grid gap-8 lg:grid-cols-2">
+        <div className="space-y-8">
+          <Card className="transition-all hover:shadow-md dark:shadow-none dark:hover:shadow-none dark:border-border/50">
+            <CardHeader>
+              <CardTitle>Add New Production Entry</CardTitle>
+              <CardDescription>
+                Record new production entries with product details and quantities
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ProductionForm />
+            </CardContent>
+          </Card>
+
+          <Card className="transition-all hover:shadow-md dark:shadow-none dark:hover:shadow-none dark:border-border/50">
+            <CardHeader>
+              <CardTitle>Production Statistics</CardTitle>
+              <CardDescription>
+                Overview of your production data
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium">Total Production</h3>
+                  <p className="text-2xl font-bold">{totalProduction}</p>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium">Products</h3>
+                  <p className="text-2xl font-bold">{uniqueProducts}</p>
+                </div>
               </div>
-            </div>
-            
-            <div className="space-y-8">
-              <Card className="transition-all hover:shadow-md dark:shadow-none dark:hover:shadow-none dark:border-border/50">
-                <CardHeader>
-                  <CardTitle>Production by Category</CardTitle>
-                  <CardDescription>Distribution of production across categories</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {categoryChartData.length > 0 ? (
-                    <div className="h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={categoryChartData}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            outerRadius={100}
-                            fill="#8884d8"
-                            dataKey="value"
-                            label={(data) => `${data.name}: ${(data.percent * 100).toFixed(0)}%`}
-                          >
-                            {categoryChartData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip formatter={(value) => value} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-                  ) : (
-                    <div className="flex h-[300px] items-center justify-center">
-                      <p className="text-muted-foreground">No data available</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              
-              <Card className="transition-all hover:shadow-md dark:shadow-none dark:hover:shadow-none dark:border-border/50">
-                <CardHeader>
-                  <CardTitle>Production by Shift</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {shiftChartData.length > 0 ? (
-                    <div className="h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart
-                          data={shiftChartData}
-                          margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                        >
-                          <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Tooltip content={<CustomTooltip />} />
-                          <Legend />
-                          <Bar dataKey="value" name="Production" fill="#8884d8" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  ) : (
-                    <div className="flex h-[300px] items-center justify-center">
-                      <p className="text-muted-foreground">No data available</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-          
-          <Card className="transition-all hover:shadow-md dark:shadow-none dark:hover:shadow-none dark:border-border/50">
-            <CardHeader>
-              <CardTitle>Production Trends</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {dateChartData.length > 0 ? (
-                <div className="h-[400px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={dateChartData}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                      <XAxis dataKey="date" />
-                      <YAxis />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend />
-                      <Bar dataKey="value" name="Production" fill="#8884d8" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <div className="flex h-[400px] items-center justify-center">
-                  <p className="text-muted-foreground">No data available</p>
-                </div>
-              )}
             </CardContent>
           </Card>
-        </TabsContent>
-        
-        <TabsContent value="charts" className="space-y-4">
-          <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-            <Card className="transition-all hover:shadow-md dark:shadow-none dark:hover:shadow-none dark:border-border/50">
-              <CardHeader>
-                <CardTitle>Production by Category</CardTitle>
-                <CardDescription>Distribution of production across categories</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {categoryChartData.length > 0 ? (
-                  <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={categoryChartData}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          outerRadius={100}
-                          fill="#8884d8"
-                          dataKey="value"
-                          label={(data) => `${data.name}: ${(data.percent * 100).toFixed(0)}%`}
-                        >
-                          {categoryChartData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => value} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <div className="flex h-[300px] items-center justify-center">
-                    <p className="text-muted-foreground">No data available</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            
-            <Card className="transition-all hover:shadow-md dark:shadow-none dark:hover:shadow-none dark:border-border/50">
-              <CardHeader>
-                <CardTitle>Production by Shift</CardTitle>
-                <CardDescription>Comparison of production across shifts</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {shiftChartData.length > 0 ? (
-                  <div className="h-[300px]">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={shiftChartData}
-                        margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                        <XAxis dataKey="name" />
-                        <YAxis />
-                        <Tooltip content={<CustomTooltip />} />
-                        <Legend />
-                        <Bar dataKey="value" name="Production" fill="#8884d8" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                ) : (
-                  <div className="flex h-[300px] items-center justify-center">
-                    <p className="text-muted-foreground">No data available</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-          
+        </div>
+
+        <div className="space-y-8">
           <Card className="transition-all hover:shadow-md dark:shadow-none dark:hover:shadow-none dark:border-border/50">
             <CardHeader>
-              <CardTitle>Production Trends Over Time</CardTitle>
-              <CardDescription>Daily production trends</CardDescription>
+              <CardTitle>Production by Date</CardTitle>
+              <CardDescription>
+                Daily production quantities
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              {dateChartData.length > 0 ? (
-                <div className="h-[400px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={dateChartData}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                      <XAxis dataKey="date" />
-                      <YAxis />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend />
-                      <Bar dataKey="value" name="Production" fill="#8884d8" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              ) : (
-                <div className="flex h-[400px] items-center justify-center">
-                  <p className="text-muted-foreground">No data available</p>
-                </div>
-              )}
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={dateChartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend />
+                    <Bar dataKey="value" name="Quantity" fill="#0088FE" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
-        </TabsContent>
-        
-        <TabsContent value="all-entries" className="space-y-4">
-          <EntriesListView
-            entries={productionEntries}
-            title="All Production Entries"
-            description="Complete list of production records"
-            type="production"
-            pageSize={10}
-          />
-        </TabsContent>
-      </Tabs>
+
+          <Card className="col-span-2">
+            <CardHeader>
+              <CardTitle>Recent Production Entries</CardTitle>
+              <CardDescription>Latest production records</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PageRecentEntries
+                title="Recent Production Entries"
+                description="Latest production records"
+                type="production"
+                allowDelete={true}
+                showFilters={false}
+              />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div className="mt-8">
+        <EntryDetailsView
+          type="production"
+          title="Production Entries"
+          description="View and manage all production entries with advanced filtering and sorting options"
+        />
+      </div>
       
       <CopyrightFooter />
     </div>

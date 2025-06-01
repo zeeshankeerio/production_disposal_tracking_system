@@ -7,8 +7,7 @@ import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu } from "lucide-react"
-import { Database, LayoutDashboard, FileText, Package } from "lucide-react"
+import { Menu, Database, LayoutDashboard, Package, PackagePlus, PackageMinus } from "lucide-react"
 
 export function MobileNav() {
   const [open, setOpen] = useState(false)
@@ -16,9 +15,14 @@ export function MobileNav() {
 
   const navItems = [
     {
-      href: "/entries",
-      label: "Entries",
-      icon: FileText,
+      href: "/production",
+      label: "Production",
+      icon: PackagePlus,
+    },
+    {
+      href: "/disposal",
+      label: "Disposal",
+      icon: PackageMinus,
     },
     {
       href: "/dashboard",
@@ -49,24 +53,29 @@ export function MobileNav() {
         </Button>
       </SheetTrigger>
       <SheetContent side="left" className="pr-0">
-        <div className="flex flex-col space-y-3">
+        <Link href="/" className="flex items-center">
+          <span className="font-bold">Production Disposal Tracker</span>
+        </Link>
+        <nav className="flex flex-col space-y-4 mt-4">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
               onClick={() => setOpen(false)}
               className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground",
+                "text-sm font-medium transition-colors hover:text-primary",
                 pathname === item.href
-                  ? "bg-accent text-accent-foreground"
+                  ? "text-primary"
                   : "text-muted-foreground"
               )}
             >
-              <item.icon className="h-4 w-4" />
-              {item.label}
+              <Button variant="ghost" size="sm" className="flex items-center gap-2 w-full justify-start">
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </Button>
             </Link>
           ))}
-        </div>
+        </nav>
       </SheetContent>
     </Sheet>
   )

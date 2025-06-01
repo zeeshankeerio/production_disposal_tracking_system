@@ -27,8 +27,16 @@ export interface ProductionEntry extends BaseEntry {
   expiration_date: string
 }
 
-export interface DisposalEntry extends BaseEntry {
+export interface DisposalEntry {
+  id: string
+  product_id: string
+  product_name: string
+  quantity: number
+  date: Date | string
+  shift: Shift
   reason: string
+  staff_name: string
+  notes?: string
 }
 
 export interface ApiResponse<T> {
@@ -44,7 +52,7 @@ export interface DataContextType {
   disposalEntries: DisposalEntry[]
   isLoading: boolean
   error: string | null
-  addProductionEntry: (entry: ProductionEntry) => Promise<void>
+  addProductionEntry: (entry: Omit<ProductionEntry, "id">) => Promise<void>
   addDisposalEntry: (entry: DisposalEntry) => Promise<void>
   addProduct: (product: Omit<Product, "id">) => Promise<Product>
   updateProduct: (product: Product) => Promise<Product>

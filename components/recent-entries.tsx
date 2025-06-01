@@ -129,9 +129,21 @@ export function RecentEntries() {
         (entry.staff_name ? entry.staff_name.toLowerCase() : '').includes(searchTerm.toLowerCase())
       )
       .sort((a, b) => {
-        const dateA = new Date(a.date).getTime()
-        const dateB = new Date(b.date).getTime()
-        return sortOrder === "desc" ? dateB - dateA : dateA - dateB
+        // 1. Capture potentially undefined values
+        const rawDateA = a.date;
+        const rawDateB = b.date;
+        
+        // 2. Define safe/fallback defaults
+        const safeDateA = (rawDateA !== undefined && rawDateA !== null)
+          ? new Date(rawDateA)
+          : new Date(0); // Default to Unix epoch
+        
+        const safeDateB = (rawDateB !== undefined && rawDateB !== null)
+          ? new Date(rawDateB)
+          : new Date(0); // Default to Unix epoch
+        
+        // 3. Compare dates safely
+        return sortOrder === "desc" ? safeDateB.getTime() - safeDateA.getTime() : safeDateA.getTime() - safeDateB.getTime();
       })
   }, [productionEntries, searchTerm, sortOrder])
 
@@ -143,9 +155,21 @@ export function RecentEntries() {
         (entry.reason ? entry.reason.toLowerCase() : '').includes(searchTerm.toLowerCase())
       )
       .sort((a, b) => {
-        const dateA = new Date(a.date).getTime()
-        const dateB = new Date(b.date).getTime()
-        return sortOrder === "desc" ? dateB - dateA : dateA - dateB
+        // 1. Capture potentially undefined values
+        const rawDateA = a.date;
+        const rawDateB = b.date;
+        
+        // 2. Define safe/fallback defaults
+        const safeDateA = (rawDateA !== undefined && rawDateA !== null)
+          ? new Date(rawDateA)
+          : new Date(0); // Default to Unix epoch
+        
+        const safeDateB = (rawDateB !== undefined && rawDateB !== null)
+          ? new Date(rawDateB)
+          : new Date(0); // Default to Unix epoch
+        
+        // 3. Compare dates safely
+        return sortOrder === "desc" ? safeDateB.getTime() - safeDateA.getTime() : safeDateA.getTime() - safeDateB.getTime();
       })
   }, [disposalEntries, searchTerm, sortOrder])
 
@@ -184,7 +208,25 @@ export function RecentEntries() {
             <div>
               <div className="font-medium">{entry.product_name}</div>
               <div className="text-sm text-muted-foreground">
-                {entry.staff_name} • {formatDate(entry.date.toString())}
+                {entry.staff_name} • 
+                {/* 1. Capture potentially undefined value */}
+                {(() => {
+                  const rawDate = entry.date;
+                  
+                  {/* 2. Define a safe/fallback default */}
+                  const safeDate = (rawDate !== undefined && rawDate !== null)
+                    ? new Date(rawDate)
+                    : new Date(); // Default to current date
+                  
+                  {/* 3. Format the date safely */}
+                  const formattedDate = safeDate.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric',
+                  });
+                  
+                  return formattedDate;
+                })()}
               </div>
               {isDisposalEntry(entry) && (
                 <div className="text-xs text-muted-foreground">

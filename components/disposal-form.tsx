@@ -62,7 +62,12 @@ const disposalSchema = z.object({
   quantity: z.number().min(1, "Quantity must be greater than 0").max(10000, "Quantity seems too high"),
   date: z.date({
     required_error: "Date is required",
-  }),
+  }).refine((date) => {
+    // Ensure date is not in the future
+    const today = new Date()
+    today.setHours(23, 59, 59, 999)
+    return date <= today
+  }, "Date cannot be in the future"),
   shift: z.enum(["morning", "afternoon", "night"] as const, {
     required_error: "Shift is required",
   }),
@@ -80,12 +85,26 @@ type CartEntry = {
   quantity: number;
   reason: string;
   notes?: string;
+  date?: string;
 }
 
 type CommonFields = {
   date: Date;
   shift: "morning" | "afternoon" | "night";
   staff_name: string;
+}
+
+// Update the formatDate function to handle both Date and string types
+const formatDate = (date: Date | string | undefined): string => {
+  if (!date) return "N/A"
+  try {
+    const dateObj = typeof date === "string" ? new Date(date) : date
+    if (isNaN(dateObj.getTime())) return "Invalid Date"
+    return format(dateObj, "MMM dd, yyyy HH:mm")
+  } catch (error) {
+    console.error("Error formatting date:", error)
+    return "Invalid Date"
+  }
 }
 
 export function DisposalForm() {
@@ -136,13 +155,40 @@ export function DisposalForm() {
   }, [form.watch])
 
   const addToCart = (data: DisposalFormValues) => {
+    // Debug log to check incoming data
+    console.log("Adding to cart:", data);
+
+    // 1. Capture potentially undefined value
+    const rawDisposalDate = data.date;
+
+    // 2. Define a safe/fallback default
+    const safeDisposalDate = (rawDisposalDate !== undefined && rawDisposalDate !== null)
+      ? new Date(rawDisposalDate)
+      : new Date(); // Default to current date
+
+    // 3. Validate the safe date
+    if (isNaN(safeDisposalDate.getTime())) {
+      console.error("Invalid disposal date:", rawDisposalDate);
+      toast({
+        title: "Error",
+        description: "Invalid disposal date",
+        variant: "destructive",
+      });
+      return;
+    }
+
     const newEntry: CartEntry = {
       id: Date.now().toString(),
       product_name: data.product_name,
       quantity: data.quantity,
       reason: data.reason,
       notes: data.notes,
+      date: safeDisposalDate.toISOString(), // Store as ISO string
     }
+
+    // Debug log to check new entry
+    console.log("New cart entry:", newEntry);
+
     setCartEntries([...cartEntries, newEntry])
     
     // Reset only product-specific fields
@@ -213,6 +259,13 @@ export function DisposalForm() {
     }
   }
 
+  // Safe date validation
+  const isValidDate = (date: any): boolean => {
+    if (!date) return false;
+    const d = new Date(date);
+    return !isNaN(d.getTime());
+  };
+
   const submitCart = async () => {
     if (cartEntries.length === 0) {
       toast({
@@ -235,23 +288,39 @@ export function DisposalForm() {
     try {
       setIsSubmitting(true)
       
-      // Submit each entry in the cart
-      for (const entry of cartEntries) {
+      // Submit each entry in the cart separately
+      const submissionPromises = cartEntries.map(async (entry) => {
         const selectedProductData = products.find(p => p.name === entry.product_name)
         
         if (!selectedProductData) {
           throw new Error(`Product not found: ${entry.product_name}`)
         }
-        
-        const submissionEntry: DisposalEntry = {
-          ...entry,
-          ...commonFields,
-          product_id: selectedProductData.id,
-          date: commonFields.date,
+
+        // Validate disposal date
+        const disposalDate = commonFields.date ? new Date(commonFields.date) : null
+
+        if (!disposalDate || isNaN(disposalDate.getTime())) {
+          throw new Error("Invalid disposal date")
         }
         
-        await addDisposalEntry(submissionEntry)
-      }
+        // Format dates for submission
+        const submissionEntry = {
+          id: Date.now().toString(),
+          product_id: selectedProductData.id,
+          product_name: entry.product_name,
+          quantity: entry.quantity,
+          date: disposalDate.toISOString(), // Convert to ISO string
+          shift: commonFields.shift,
+          reason: entry.reason,
+          staff_name: commonFields.staff_name,
+          notes: entry.notes || ""
+        }
+        
+        return addDisposalEntry(submissionEntry)
+      })
+
+      // Wait for all submissions to complete
+      await Promise.all(submissionPromises)
       
       // Clear cart after successful submission
       setCartEntries([])
@@ -288,25 +357,169 @@ export function DisposalForm() {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* Common Fields Section */}
             <div className="space-y-4">
               <h3 className="text-lg font-semibold">Common Information</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <FormField
+                  control={form.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                      <FormLabel>Date</FormLabel>
+                      <FormControl>
+                        <ClientDatePicker
+                          value={field.value}
+                          onChange={field.onChange}
+                          placeholder="Select disposal date"
+                          disableFutureDates={true}
+                          fromYear={2020}
+                          toYear={new Date().getFullYear()}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="shift"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Shift</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select shift" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="morning">Morning</SelectItem>
+                          <SelectItem value="afternoon">Afternoon</SelectItem>
+                          <SelectItem value="night">Night</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="staff_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Staff Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Enter staff name" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Product Entry Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold">Add Product</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="product_name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Product Name</FormLabel>
+                      <FormControl>
+                        <Combobox
+                          options={products.map(product => ({
+                            value: product.name,
+                            label: product.name,
+                            badge: product.category
+                          }))}
+                          value={field.value}
+                          onValueChange={field.onChange}
+                          placeholder="Select a product"
+                          emptyMessage="No products found."
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="quantity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Quantity</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          placeholder="Enter quantity"
+                          {...field}
+                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          min={1}
+                          max={10000}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <FormField
                 control={form.control}
-                name="date"
+                name="reason"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
-                    <FormLabel>Date</FormLabel>
+                  <FormItem>
+                    <FormLabel>Reasons (up to 3)</FormLabel>
                     <FormControl>
-                      <ClientDatePicker
-                        value={field.value}
-                        onChange={field.onChange}
-                        placeholder="Select disposal date"
-                        disableFutureDates={true}
-                        fromYear={2020}
-                        toYear={new Date().getFullYear()}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                        {[0, 1, 2].map((index) => (
+                          <Select
+                            key={index}
+                            onValueChange={(value) => handleReasonChange(value, index)}
+                            value={selectedReasons[index] || ""}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={`Reason ${index + 1}`} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {DISPOSAL_REASONS.map((reason) => (
+                                <SelectItem 
+                                  key={reason} 
+                                  value={reason}
+                                  disabled={selectedReasons.includes(reason) && selectedReasons[index] !== reason}
+                                >
+                                  {reason}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ))}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="notes"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Additional Notes (Optional)</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Enter any additional details about this disposal" 
+                        className="min-h-[80px]"
+                        {...field} 
                       />
                     </FormControl>
                     <FormMessage />
@@ -314,250 +527,116 @@ export function DisposalForm() {
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="shift"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Shift</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select shift" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="morning">Morning</SelectItem>
-                        <SelectItem value="afternoon">Afternoon</SelectItem>
-                        <SelectItem value="night">Night</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="staff_name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Staff Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter staff name" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  className="w-full md:w-auto"
+                  disabled={isSubmitting || isDataLoading}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add to Cart
+                </Button>
               </div>
-            </div>
-
-            {/* Product Entry Section */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Add Product</h3>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                  <div className="md:col-span-4">
-                    <FormField
-                      control={form.control}
-                      name="product_name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Product Name</FormLabel>
-                          <FormControl>
-                            <Combobox
-                              options={products.map(product => ({
-                                value: product.name,
-                                label: product.name,
-                                badge: product.category
-                              }))}
-                              value={field.value}
-                              onValueChange={field.onChange}
-                              placeholder="Select a product"
-                              emptyMessage="No products found."
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <FormField
-                      control={form.control}
-                      name="quantity"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Quantity</FormLabel>
-                          <FormControl>
-                            <Input
-                              type="number"
-                              placeholder="Enter quantity"
-                              {...field}
-                              onChange={(e) => field.onChange(Number(e.target.value))}
-                              min={1}
-                              max={10000}
-                            />
-                          </FormControl>
-                          {selectedProductDetails && (
-                            <FormDescription>
-                              Unit: {selectedProductDetails.unit}
-                            </FormDescription>
-                          )}
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="md:col-span-5">
-                    <FormField
-                      control={form.control}
-                      name="reason"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Reasons (up to 3)</FormLabel>
-                          <FormControl>
-                            <div className="space-y-2">
-                              {[0, 1, 2].map((index) => (
-                                <Select
-                                  key={index}
-                                  onValueChange={(value) => handleReasonChange(value, index)}
-                                  value={selectedReasons[index] || ""}
-                                >
-                                  <SelectTrigger>
-                                    <SelectValue placeholder={`Reason ${index + 1}`} />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {DISPOSAL_REASONS.map((reason) => (
-                                      <SelectItem 
-                                        key={reason} 
-                                        value={reason}
-                                        disabled={selectedReasons.includes(reason) && selectedReasons[index] !== reason}
-                                      >
-                                        {reason}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              ))}
-                            </div>
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="md:col-span-1">
-                    <Button
-                      type="submit"
-                      className="w-full h-10"
-                      disabled={isSubmitting || isDataLoading}
-                    >
-                      <Plus className="w-4 h-4" />
-                    </Button>
-                  </div>
-            </div>
-
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Additional Notes (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea 
-                      placeholder="Enter any additional details about this disposal" 
-                          className="min-h-[80px]"
-                      {...field} 
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-              </div>
-            </div>
-
-            {/* Submit Cart Button */}
-            <div className="flex justify-end">
-              <Button
-                type="button"
-                variant="secondary"
-                className="w-full md:w-auto"
-                disabled={isSubmitting || isDataLoading || cartEntries.length === 0}
-                onClick={submitCart}
-              >
-                {isSubmitting ? "Submitting..." : `Submit All Entries (${cartEntries.length})`}
-              </Button>
             </div>
           </form>
         </Form>
 
         {/* Cart Entries */}
         {cartEntries.length > 0 && (
-          <div className="mt-8 space-y-4">
-            <h3 className="text-lg font-semibold">Cart Entries</h3>
+          <div className="mt-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">Cart Entries</h3>
+              <Button
+                type="button"
+                variant="secondary"
+                className="w-full md:w-auto"
+                disabled={isSubmitting || isDataLoading}
+                onClick={submitCart}
+              >
+                {isSubmitting ? "Submitting..." : `Submit All Entries (${cartEntries.length})`}
+              </Button>
+            </div>
             <div className="space-y-2">
-              {cartEntries.map((entry) => (
-                <div
-                  key={entry.id}
-                  className="flex items-center justify-between p-3 bg-muted rounded-lg"
-                >
-                  <div className="flex-1">
-                    <p className="font-medium">{entry.product_name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {entry.quantity} units
-                    </p>
-                    <div className="text-sm text-muted-foreground">
-                      <p>Reasons:</p>
-                      <ul className="list-disc list-inside">
-                        {entry.reason.split(", ").map((reason, index) => (
-                          <li key={index}>{reason}</li>
-                        ))}
-                      </ul>
-                    </div>
-                    {entry.notes && (
-                      <p className="text-sm text-muted-foreground">
-                        Notes: {entry.notes}
-                      </p>
-                    )}
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => removeFromCart(entry.id)}
-                    disabled={isSubmitting}
+              {cartEntries.map((entry) => {
+                // 1. Capture potentially undefined value
+                const rawDate = entry.date;
+
+                // 2. Use current date as default if undefined or invalid
+                let formattedDate = "No date";
+                let safeDate = rawDate ? new Date(rawDate) : new Date();
+                if (!isNaN(safeDate.getTime())) {
+                  formattedDate = safeDate.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  });
+                } else {
+                  // fallback to current date
+                  safeDate = new Date();
+                  formattedDate = safeDate.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  });
+                }
+
+                return (
+                  <div
+                    key={entry.id}
+                    className="flex items-center justify-between p-3 bg-muted rounded-lg"
                   >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
+                    <div className="flex-1">
+                      <p className="font-medium">{entry.product_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {entry.quantity} units • Date: {formattedDate}
+                      </p>
+                      <div className="text-sm text-muted-foreground">
+                        <p>Reasons:</p>
+                        <ul className="list-disc list-inside">
+                          {entry.reason.split(", ").map((reason, index) => (
+                            <li key={index}>{reason}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      {entry.notes && (
+                        <p className="text-sm text-muted-foreground">
+                          Notes: {entry.notes}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeFromCart(entry.id)}
+                      disabled={isSubmitting}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
 
-            {selectedProductDetails && (
+        {selectedProductDetails && (
           <Alert className="mt-6">
-                <InfoIcon className="h-4 w-4" />
-                <AlertTitle>Product Information</AlertTitle>
-                <AlertDescription>
-                  {selectedProductDetails.description || "No description available"}
-                </AlertDescription>
-              </Alert>
-            )}
+            <InfoIcon className="h-4 w-4" />
+            <AlertTitle>Product Information</AlertTitle>
+            <AlertDescription>
+              {selectedProductDetails.description || "No description available"}
+            </AlertDescription>
+          </Alert>
+        )}
 
         <Alert variant="destructive" className="mt-6">
-              <AlertTriangleIcon className="h-4 w-4" />
-              <AlertTitle>Warning</AlertTitle>
-              <AlertDescription>
-                Disposing of products should be done carefully and in accordance with company policies.
-                Please ensure all information is accurate.
-              </AlertDescription>
-            </Alert>
+          <AlertTriangleIcon className="h-4 w-4" />
+          <AlertTitle>Warning</AlertTitle>
+          <AlertDescription>
+            Disposing of products should be done carefully and in accordance with company policies.
+            Please ensure all information is accurate.
+          </AlertDescription>
+        </Alert>
       </CardContent>
     </Card>
   )

@@ -6,7 +6,18 @@ import { Badge } from "@/components/ui/badge"
 import { formatDate, formatNumber } from "@/lib/utils"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ProductionEntry, DisposalEntry } from "@/lib/types"
-import { ArrowDown, ArrowUp, Search, X, ListFilter, Trash2, BarChart3, InfoIcon, RefreshCw } from "lucide-react"
+import { 
+  ArrowDown, 
+  ArrowUp, 
+  Search, 
+  X, 
+  ListFilter, 
+  Trash2, 
+  BarChart3, 
+  InfoIcon, 
+  RefreshCw, 
+  AlertTriangle 
+} from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { 
   DropdownMenu, 
@@ -21,29 +32,31 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { format } from "date-fns"
 import { useData } from "@/components/providers/data-provider"
+import { useToast } from "@/components/ui/use-toast"
 
 interface PageRecentEntriesProps {
-  entries: (ProductionEntry | DisposalEntry)[]
   title: string
   description?: string
   type: "production" | "disposal"
   maxEntries?: number
   showFilters?: boolean
+  allowDelete?: boolean
 }
 
 export function PageRecentEntries({
-  entries,
   title,
   description,
   type,
   maxEntries = 8,
-  showFilters = true
+  showFilters = true,
+  allowDelete = false
 }: PageRecentEntriesProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [isRefreshing, setIsRefreshing] = useState(false)
-  const { refreshData } = useData()
+  const { productionEntries, disposalEntries, refreshData, deleteProductionEntry, deleteDisposalEntry, isLoading, error } = useData()
   const [mounted, setMounted] = useState(false)
+  const { toast } = useToast()
   
   useEffect(() => {
     setMounted(true)
@@ -54,11 +67,17 @@ export function PageRecentEntries({
     return 'reason' in entry
   }
 
+  // Get entries based on type
+  const entries = type === "production" ? productionEntries : disposalEntries
+
   // Filter entries based on search term
   const filteredEntries = useMemo(() => {
+    if (!entries || !Array.isArray(entries)) return []
     if (!searchTerm.trim()) return entries
     
     return entries.filter(entry => {
+      if (!entry) return false
+      
       const matchesSearch = 
         (entry.product_name ? entry.product_name.toLowerCase() : '').includes(searchTerm.toLowerCase()) ||
         (entry.staff_name ? entry.staff_name.toLowerCase() : '').includes(searchTerm.toLowerCase()) ||
@@ -74,28 +93,81 @@ export function PageRecentEntries({
 
   // Sort entries by date
   const sortedEntries = useMemo(() => {
+    if (!filteredEntries || !Array.isArray(filteredEntries)) return []
+    
     return [...filteredEntries].sort((a, b) => {
-      const dateA = new Date(a.date).getTime()
-      const dateB = new Date(b.date).getTime()
-      return sortOrder === "desc" ? dateB - dateA : dateA - dateB
+      // 1. Capture potentially undefined values
+      const rawDateA = a.date;
+      const rawDateB = b.date;
+      
+      // 2. Define safe/fallback defaults
+      const safeDateA = (rawDateA !== undefined && rawDateA !== null)
+        ? new Date(rawDateA)
+        : new Date(0); // Default to Unix epoch
+      
+      const safeDateB = (rawDateB !== undefined && rawDateB !== null)
+        ? new Date(rawDateB)
+        : new Date(0); // Default to Unix epoch
+      
+      // 3. Compare dates safely
+      return sortOrder === "desc" ? safeDateB.getTime() - safeDateA.getTime() : safeDateA.getTime() - safeDateB.getTime();
     })
   }, [filteredEntries, sortOrder])
 
   // Get limited entries for display
   const displayEntries = useMemo(() => {
+    if (!sortedEntries || !Array.isArray(sortedEntries)) return []
     return sortedEntries.slice(0, maxEntries)
   }, [sortedEntries, maxEntries])
 
   // Handle refresh
   const handleRefresh = async () => {
-    setIsRefreshing(true)
-    await refreshData()
-    setTimeout(() => {
-      setIsRefreshing(false)
-    }, 800)
+    try {
+      setIsRefreshing(true)
+      await refreshData()
+    } catch (err) {
+      console.error("Error refreshing data:", err)
+      toast({
+        title: "Error",
+        description: "Failed to refresh data. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setTimeout(() => {
+        setIsRefreshing(false)
+      }, 800)
+    }
   }
 
-  if (!mounted) {
+  // Handle delete
+  const handleDelete = async (entry: ProductionEntry | DisposalEntry) => {
+    if (!entry || !entry.id) return
+    
+    try {
+      if (type === "production") {
+        await deleteProductionEntry(entry.id)
+      } else {
+        await deleteDisposalEntry(entry.id)
+      }
+      
+      toast({
+        title: "Success",
+        description: `${type === "production" ? "Production" : "Disposal"} entry deleted successfully`,
+      })
+      
+      // Refresh data to update the UI
+      await refreshData()
+    } catch (error) {
+      console.error(`Error deleting ${type} entry:`, error)
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : `Failed to delete ${type} entry`,
+        variant: "destructive",
+      })
+    }
+  }
+
+  if (!mounted || isLoading) {
     return (
       <Card className="w-full dark:border-border/50">
         <CardHeader>
@@ -116,7 +188,27 @@ export function PageRecentEntries({
     )
   }
 
-  if (entries.length === 0) {
+  if (error) {
+    return (
+      <Card className="w-full dark:border-border/50">
+        <CardHeader>
+          <CardTitle>{title}</CardTitle>
+          {description && <CardDescription>{description}</CardDescription>}
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive" className="dark:border-border/50">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              {error}
+            </AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (!entries || entries.length === 0) {
     return (
       <Card className="w-full dark:border-border/50">
         <CardHeader>
@@ -198,49 +290,37 @@ export function PageRecentEntries({
           </div>
         )}
         
-        <div className="space-y-3">
-          {displayEntries.length === 0 ? (
-            <div className="text-center py-6 text-muted-foreground">
-              No matching entries found
-            </div>
-          ) : (
-            displayEntries.map((entry) => (
+        <div className="space-y-4">
+          {displayEntries.map((entry) => {
+            if (!entry) return null
+            
+            return (
               <div key={entry.id} className="flex flex-col gap-2 border-b pb-3 dark:border-border/50">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger className="text-start">
-                          <div className="font-medium text-md hover:text-primary">
-                            {entry.product_name}
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-[300px] bg-background border border-border dark:bg-background/90 dark:border-border/50">
-                          <p>Quantity: {formatNumber(entry.quantity)}</p>
-                          <p>Staff: {entry.staff_name}</p>
-                          <p>Date: {format(new Date(entry.date), "PPP")}</p>
-                          <p>Shift: {entry.shift === "morning" ? "Morning" : 
-                                      entry.shift === "afternoon" ? "Afternoon" : "Night"}</p>
-                          {isDisposalEntry(entry) && <p>Reason: {entry.reason}</p>}
-                          {entry.notes && <p>Notes: {entry.notes}</p>}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                    <div className="text-sm text-muted-foreground flex gap-2 items-center">
-                      <span>{format(new Date(entry.date), "PP")}</span>
-                      <span>•</span>
-                      <Badge variant="outline" className="font-normal dark:border-border/50">
-                        {entry.shift === "morning" ? "Morning" : 
-                         entry.shift === "afternoon" ? "Afternoon" : "Night"}
-                      </Badge>
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">{entry.product_name}</span>
+                      {allowDelete && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0 text-destructive hover:text-destructive/90"
+                          onClick={() => handleDelete(entry)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      <span className="font-medium">Staff:</span> {entry.staff_name} •{" "}
+                      <span className="font-medium">Date:</span> {entry.date ? formatDate(new Date(entry.date).toISOString()) : 'No date'} •{" "}
+                      <span className="font-medium">Shift:</span> {entry.shift}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={type === "production" ? "default" : "destructive"} className="ml-auto">
-                      {isDisposalEntry(entry) ? <Trash2 className="mr-1 h-3 w-3" /> : <BarChart3 className="mr-1 h-3 w-3" />}
-                      {formatNumber(entry.quantity)}
-                    </Badge>
-                  </div>
+                  <Badge variant={type === "production" ? "default" : "destructive"} className="ml-auto">
+                    {isDisposalEntry(entry) ? <Trash2 className="mr-1 h-3 w-3" /> : <BarChart3 className="mr-1 h-3 w-3" />}
+                    {formatNumber(entry.quantity)}
+                  </Badge>
                 </div>
                 
                 {isDisposalEntry(entry) && (
@@ -255,8 +335,8 @@ export function PageRecentEntries({
                   </div>
                 )}
               </div>
-            ))
-          )}
+            )
+          })}
         </div>
         
         {sortedEntries.length > maxEntries && (

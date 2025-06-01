@@ -2,14 +2,34 @@ import { NextResponse } from "next/server"
 import * as db from "@/lib/supabase-db"
 import { ApiResponse, DisposalEntry } from "@/lib/types"
 import { revalidatePath } from "next/cache"
+import { isValid } from "date-fns"
 
-// Helper to properly serialize dates for API responses
-const serializeEntry = (entry: DisposalEntry): any => {
-  return {
-    ...entry,
-    date: entry.date instanceof Date ? entry.date.toISOString() : entry.date,
-  };
-};
+// Helper function to validate disposal entry
+const validateDisposalEntry = (entry: any): { isValid: boolean; error?: string } => {
+  if (!entry.product_name || !entry.product_id || !entry.staff_name || 
+      !entry.date || !entry.quantity || !entry.shift || !entry.reason) {
+    return { isValid: false, error: "Invalid disposal entry data. Required fields are missing." }
+  }
+
+  // Validate date
+  const entryDate = new Date(entry.date)
+  if (!isValid(entryDate)) {
+    return { isValid: false, error: "Invalid date format" }
+  }
+
+  // Validate quantity
+  if (typeof entry.quantity !== 'number' || entry.quantity <= 0) {
+    return { isValid: false, error: "Invalid quantity" }
+  }
+
+  return { isValid: true }
+}
+
+// Helper function to serialize entry dates
+const serializeEntry = (entry: DisposalEntry) => ({
+  ...entry,
+  date: entry.date instanceof Date ? entry.date.toISOString() : entry.date
+})
 
 // GET all disposal entries
 export async function GET() {
@@ -39,11 +59,11 @@ export async function POST(request: Request) {
     const entry = await request.json()
     
     // Validate the entry
-    if (!entry.product_name || !entry.product_id || !entry.staff_name || 
-        !entry.date || !entry.quantity || !entry.shift || !entry.reason) {
+    const validation = validateDisposalEntry(entry)
+    if (!validation.isValid) {
       return NextResponse.json({
         success: false,
-        error: "Invalid disposal entry data. Required fields are missing.",
+        error: validation.error,
         statusCode: 400
       } as ApiResponse<DisposalEntry>, { status: 400 })
     }
@@ -58,7 +78,13 @@ export async function POST(request: Request) {
       } as ApiResponse<DisposalEntry>, { status: 404 })
     }
     
-    const newEntry = await db.createDisposalEntry(entry)
+    // Convert date string to Date object if needed
+    const entryWithDate = {
+      ...entry,
+      date: entry.date instanceof Date ? entry.date : new Date(entry.date)
+    }
+    
+    const newEntry = await db.createDisposalEntry(entryWithDate)
     
     if (!newEntry) {
       return NextResponse.json({

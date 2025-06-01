@@ -3,18 +3,13 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { usePathname } from "next/navigation"
-import { FileText, LayoutDashboard, Package, BarChart, PackagePlus, PackageMinus, Settings } from "lucide-react"
+import { LayoutDashboard, Package, PackagePlus, PackageMinus, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function QuickNav() {
   const pathname = usePathname()
   
   const navItems = [
-    {
-      href: "/entries",
-      label: "Entries",
-      icon: FileText,
-    },
     {
       href: "/dashboard",
       label: "Dashboard",

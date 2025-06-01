@@ -177,7 +177,11 @@ export default function DashboardPage() {
     if (!dateRange?.from) return productionEntries
     
     return productionEntries.filter(entry => {
+      if (!entry || !entry.date) return false
+      
       const entryDate = new Date(entry.date)
+      if (isNaN(entryDate.getTime())) return false
+      
       // If only from date is selected, treat it as a single day filter
       if (!dateRange.to) {
         return isSameDay(entryDate, dateRange.from as Date)
@@ -200,7 +204,11 @@ export default function DashboardPage() {
     if (!dateRange?.from) return disposalEntries
     
     return disposalEntries.filter(entry => {
+      if (!entry || !entry.date) return false
+      
       const entryDate = new Date(entry.date)
+      if (isNaN(entryDate.getTime())) return false
+      
       // If only from date is selected, treat it as a single day filter
       if (!dateRange.to) {
         return isSameDay(entryDate, dateRange.from as Date)
@@ -228,6 +236,8 @@ export default function DashboardPage() {
       
       // Sum production by product
       filteredProductionEntries.forEach(entry => {
+        if (!entry || !entry.product_name || typeof entry.quantity !== 'number') return
+        
         const current = productMap.get(entry.product_name) || { 
           name: entry.product_name,
           production: 0, 
@@ -242,6 +252,8 @@ export default function DashboardPage() {
       
       // Sum disposal by product
       filteredDisposalEntries.forEach(entry => {
+        if (!entry || !entry.product_name || typeof entry.quantity !== 'number') return
+        
         const current = productMap.get(entry.product_name) || { 
           name: entry.product_name,
           production: 0, 
@@ -275,9 +287,9 @@ export default function DashboardPage() {
       // Calculate disposal reasons
       const reasons: Record<string, number> = {}
       filteredDisposalEntries.forEach(entry => {
-        if (entry.reason) {
+        if (!entry || !entry.reason || typeof entry.quantity !== 'number') return
+        
           reasons[entry.reason] = (reasons[entry.reason] || 0) + entry.quantity
-        }
       })
       
       const reasonData = Object.entries(reasons)
@@ -299,6 +311,8 @@ export default function DashboardPage() {
       
       for (let i = 0; i < days; i++) {
         const date = subDays(endDate, days - i - 1)
+        if (!date || isNaN(date.getTime())) continue
+        
         const dateStr = format(date, "yyyy-MM-dd")
         const formattedDate = format(date, "MMM dd")
         
@@ -312,29 +326,47 @@ export default function DashboardPage() {
       
       // Sum production by date
       filteredProductionEntries.forEach(entry => {
-        const entryDate = new Date(entry.date)
-        const dateStr = format(entryDate, "yyyy-MM-dd")
+        if (!entry || !entry.date || typeof entry.quantity !== 'number') return
         
-        if (dateMap.has(dateStr)) {
-          const current = dateMap.get(dateStr)!
-          dateMap.set(dateStr, {
-            ...current,
-            production: current.production + entry.quantity
-          })
+        try {
+          const entryDate = new Date(entry.date)
+          if (isNaN(entryDate.getTime())) return
+          
+          const dateStr = format(entryDate, "yyyy-MM-dd")
+          
+          if (dateMap.has(dateStr)) {
+            const current = dateMap.get(dateStr)!
+            dateMap.set(dateStr, {
+              ...current,
+              production: current.production + entry.quantity
+            })
+          }
+        } catch (error) {
+          console.error("Error processing production entry date:", error)
+          return
         }
       })
       
       // Sum disposal by date
       filteredDisposalEntries.forEach(entry => {
-        const entryDate = new Date(entry.date)
-        const dateStr = format(entryDate, "yyyy-MM-dd")
+        if (!entry || !entry.date || typeof entry.quantity !== 'number') return
         
-        if (dateMap.has(dateStr)) {
-          const current = dateMap.get(dateStr)!
-          dateMap.set(dateStr, {
-            ...current,
-            disposal: current.disposal + entry.quantity
-          })
+        try {
+          const entryDate = new Date(entry.date)
+          if (isNaN(entryDate.getTime())) return
+          
+          const dateStr = format(entryDate, "yyyy-MM-dd")
+          
+          if (dateMap.has(dateStr)) {
+            const current = dateMap.get(dateStr)!
+            dateMap.set(dateStr, {
+              ...current,
+              disposal: current.disposal + entry.quantity
+            })
+          }
+        } catch (error) {
+          console.error("Error processing disposal entry date:", error)
+          return
         }
       })
       
@@ -384,8 +416,8 @@ export default function DashboardPage() {
   }
   
   return (
-    <div className="container mx-auto py-10 space-y-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="w-full px-4 py-10 space-y-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           <p className="text-muted-foreground">
@@ -914,7 +946,7 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           </div>
-
+          
           <div className="grid gap-6 md:grid-cols-2">
             {/* Top Products Table */}
             <Card className="transition-all hover:shadow-md">
@@ -1152,43 +1184,43 @@ export default function DashboardPage() {
               </Card>
 
               {/* Disposal Reasons */}
-              <Card className="transition-all hover:shadow-md">
-                <CardHeader>
-                  <CardTitle>Disposal Reasons</CardTitle>
+            <Card className="transition-all hover:shadow-md">
+              <CardHeader>
+                <CardTitle>Disposal Reasons</CardTitle>
                   <CardDescription>Breakdown of disposal reasons</CardDescription>
-                </CardHeader>
-                <CardContent className="h-[300px]">
-                  {reasonStats.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={reasonStats}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          outerRadius={100}
-                          fill="#8884d8"
-                          dataKey="value"
-                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                        >
-                          {reasonStats.map((entry, index) => (
+              </CardHeader>
+              <CardContent className="h-[300px]">
+                {reasonStats.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={reasonStats}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="value"
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      >
+                        {reasonStats.map((entry, index) => (
                             <Cell 
                               key={`cell-${index}`} 
                               fill={`hsl(${index * 40}, 70%, 50%)`} 
                             />
-                          ))}
-                        </Pie>
-                        <Tooltip formatter={(value) => value} />
-                      </PieChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex h-full items-center justify-center">
-                      <p className="text-muted-foreground">No disposal reason data available</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value) => value} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex h-full items-center justify-center">
+                    <p className="text-muted-foreground">No disposal reason data available</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
 
             {/* Top Products by Category */}
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -1257,17 +1289,17 @@ export default function DashboardPage() {
           <div className="space-y-6">
             <h3 className="text-2xl font-bold tracking-tight">Shift Analysis</h3>
             
-            <div className="grid gap-6 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2">
               {/* Production by Shift */}
-              <Card className="transition-all hover:shadow-md">
-                <CardHeader>
+            <Card className="transition-all hover:shadow-md">
+              <CardHeader>
                   <CardTitle>Production by Shift</CardTitle>
                   <CardDescription>Production volume distribution across shifts</CardDescription>
-                </CardHeader>
+              </CardHeader>
                 <CardContent className="h-[300px]">
                   {filteredProductionEntries.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
                         data={(() => {
                           const shiftData = filteredProductionEntries.reduce((acc, entry) => {
                             const shift = entry.shift || 'Unknown'
@@ -1284,32 +1316,32 @@ export default function DashboardPage() {
                         <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                         <XAxis dataKey="shift" />
                         <YAxis />
-                        <Tooltip content={<CustomTooltip />} />
+                      <Tooltip content={<CustomTooltip />} />
                         <Bar 
                           dataKey="value" 
                           fill={CHART_COLORS.production}
                           name="Production"
                           radius={[4, 4, 0, 0]}
                         />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex h-full items-center justify-center">
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex h-full items-center justify-center">
                       <p className="text-muted-foreground">No production data available</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
               {/* Disposal by Shift */}
-              <Card className="transition-all hover:shadow-md">
-                <CardHeader>
+            <Card className="transition-all hover:shadow-md">
+              <CardHeader>
                   <CardTitle>Disposal by Shift</CardTitle>
                   <CardDescription>Disposal volume distribution across shifts</CardDescription>
-                </CardHeader>
+              </CardHeader>
                 <CardContent className="h-[300px]">
                   {filteredDisposalEntries.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height="100%">
                       <BarChart
                         data={(() => {
                           const shiftData = filteredDisposalEntries.reduce((acc, entry) => {
@@ -1327,7 +1359,7 @@ export default function DashboardPage() {
                         <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                         <XAxis dataKey="shift" />
                         <YAxis />
-                        <Tooltip content={<CustomTooltip />} />
+                      <Tooltip content={<CustomTooltip />} />
                         <Bar 
                           dataKey="value" 
                           fill={CHART_COLORS.disposal}
@@ -1335,9 +1367,9 @@ export default function DashboardPage() {
                           radius={[4, 4, 0, 0]}
                         />
                       </BarChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <div className="flex h-full items-center justify-center">
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="flex h-full items-center justify-center">
                       <p className="text-muted-foreground">No disposal data available</p>
                     </div>
                   )}

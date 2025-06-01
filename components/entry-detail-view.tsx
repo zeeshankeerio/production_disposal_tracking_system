@@ -45,9 +45,24 @@ export function EntryDetailView({ entry, type }: EntryDetailViewProps) {
   const copyToClipboard = () => {
     let text = `Product: ${entry.product_name}\n`
     text += `Quantity: ${entry.quantity}\n`
-    text += `Date: ${format(new Date(entry.date), "PPP")}\n`
+    
+    // 1. Capture potentially undefined value
+    const rawDate = entry.date;
+    
+    // 2. Define a safe/fallback default
+    const safeDate = (rawDate !== undefined && rawDate !== null)
+      ? new Date(rawDate)
+      : new Date(); // Default to current date
+    
+    // 3. Format the date safely
+    const formattedDate = safeDate.toLocaleString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+    
+    text += `Date: ${formattedDate}\n`
     text += `Shift: ${entry.shift === "morning" ? "Morning" : entry.shift === "afternoon" ? "Afternoon" : "Night"}\n`
-    text += `Staff: ${entry.staff_name}\n`
     
     if (isDisposalEntry(entry)) {
       text += `Reason: ${entry.reason}\n`

@@ -63,9 +63,22 @@ export function EntriesListView({
       
       const matchesProduct = selectedProduct === "all" || entry.product_name === selectedProduct
       
-      const entryDate = new Date(entry.date)
+      // 1. Capture potentially undefined value
+      const rawDate = entry.date;
+      
+      // 2. Define a safe/fallback default
+      const safeDate = (rawDate !== undefined && rawDate !== null)
+        ? new Date(rawDate)
+        : new Date(); // Default to current date
+      
+      // 3. Validate the date
+      if (isNaN(safeDate.getTime())) {
+        console.warn("Invalid date:", rawDate);
+        return false;
+      }
+      
       const isInDateRange = dateRange?.from && dateRange?.to
-        ? entryDate >= dateRange.from && entryDate <= dateRange.to
+        ? safeDate >= dateRange.from && safeDate <= dateRange.to
         : true
       
       return matchesSearch && matchesProduct && isInDateRange
