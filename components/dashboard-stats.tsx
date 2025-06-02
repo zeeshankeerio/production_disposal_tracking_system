@@ -25,36 +25,17 @@ interface DashboardStatsProps {
 export function DashboardStats({ productionEntries, disposalEntries, dateFrom, dateTo }: DashboardStatsProps) {
   const { isLoading } = useData()
   const [mounted, setMounted] = useState(false)
-  const [timeRange, setTimeRange] = useState<"today" | "week" | "month">("week")
   
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Filter entries based on time range
+  // Filter entries based on provided dateFrom and dateTo
   const filteredData = useMemo(() => {
     const now = new Date()
-    let startDate: Date
-    
-    switch (timeRange) {
-      case "today":
-        startDate = new Date(now)
-        startDate.setHours(0, 0, 0, 0)
-        break
-      case "week":
-        startDate = subDays(now, 7)
-        break
-      case "month":
-        startDate = subDays(now, 30)
-        break
-      default:
-        startDate = subDays(now, 7)
-    }
-    
-    // Use dateFrom and dateTo if provided, otherwise use time range
-    const effectiveStart = dateFrom || startDate
+    const effectiveStart = dateFrom || subDays(now, 7) // Default to last 7 days if dateFrom is not provided
     const effectiveEnd = dateTo || now
-    
+
     const filtered = {
       production: productionEntries.filter(entry => {
         const entryDate = new Date(entry.date)
@@ -65,30 +46,14 @@ export function DashboardStats({ productionEntries, disposalEntries, dateFrom, d
         return isWithinInterval(entryDate, { start: effectiveStart, end: effectiveEnd })
       })
     }
-    
     return filtered
-  }, [productionEntries, disposalEntries, dateFrom, dateTo, timeRange])
+  }, [productionEntries, disposalEntries, dateFrom, dateTo])
   
   // Calculate key metrics
   const metrics = useMemo(() => {
     // Get previous time period for comparison
     const now = new Date()
-    let periodLength: number
-    
-    switch (timeRange) {
-      case "today":
-        periodLength = 1
-        break
-      case "week":
-        periodLength = 7
-        break
-      case "month":
-        periodLength = 30
-        break
-      default:
-        periodLength = 7
-    }
-    
+    let periodLength: number = 7 // Initialize with default value
     const currentStart = subDays(now, periodLength)
     const previousStart = subDays(currentStart, periodLength)
     
@@ -151,7 +116,7 @@ export function DashboardStats({ productionEntries, disposalEntries, dateFrom, d
         improving: rateChange < 0
       }
     }
-  }, [filteredData, productionEntries, disposalEntries, timeRange])
+  }, [filteredData, productionEntries, disposalEntries])
   
   // Calculate daily trends
   const dailyTrends = useMemo(() => {
@@ -215,15 +180,9 @@ export function DashboardStats({ productionEntries, disposalEntries, dateFrom, d
   return (
     <div className="space-y-4">
       <Tabs 
-        value={timeRange} 
-        onValueChange={(v) => setTimeRange(v as "today" | "week" | "month")}
         className="w-full sm:max-w-[400px]"
       >
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="today" className="text-xs sm:text-sm">Today</TabsTrigger>
-          <TabsTrigger value="week" className="text-xs sm:text-sm">This Week</TabsTrigger>
-          <TabsTrigger value="month" className="text-xs sm:text-sm">This Month</TabsTrigger>
-        </TabsList>
+        {/* Removed TabsList and TabsTrigger for 'Today', 'This Week', and 'This Month' */}
       </Tabs>
       
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">

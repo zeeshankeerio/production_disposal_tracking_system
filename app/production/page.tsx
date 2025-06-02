@@ -52,26 +52,34 @@ const getDateRangeForPeriod = (period: string): DateRange => {
   switch(period) {
     case "today":
       return { from: startDate, to: today }
-    case "yesterday":
-      const yesterday = new Date(startDate)
-      yesterday.setDate(yesterday.getDate() - 1)
-      return { from: yesterday, to: yesterday }
     case "week":
       const weekStart = new Date(startDate)
-      weekStart.setDate(weekStart.getDate() - 7)
+      const day = weekStart.getDay()
+      const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1)
+      weekStart.setDate(diff)
       return { from: weekStart, to: today }
     case "month":
       const monthStart = new Date(startDate)
-      monthStart.setDate(monthStart.getDate() - 30)
+      monthStart.setDate(1)
       return { from: monthStart, to: today }
+    case "three_months":
+      const threeMonthsStart = new Date(startDate)
+      threeMonthsStart.setMonth(threeMonthsStart.getMonth() - 3)
+      threeMonthsStart.setDate(1)
+      return { from: threeMonthsStart, to: today }
     case "quarter":
       const quarterStart = new Date(startDate)
-      quarterStart.setDate(quarterStart.getDate() - 90)
+      const currentQuarter = Math.floor(quarterStart.getMonth() / 3)
+      quarterStart.setMonth(currentQuarter * 3)
+      quarterStart.setDate(1)
       return { from: quarterStart, to: today }
     case "year":
       const yearStart = new Date(startDate)
-      yearStart.setDate(yearStart.getDate() - 365)
+      yearStart.setMonth(0)
+      yearStart.setDate(1)
       return { from: yearStart, to: today }
+    case "all":
+      return { from: undefined, to: undefined }
     default:
       return { from: startDate, to: today }
   }
@@ -102,6 +110,7 @@ export default function ProductionPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [showAllEntries, setShowAllEntries] = useState(false)
   const { toast } = useToast()
+  const [activeView, setActiveView] = useState("all")
   
   // Set mounted state after initial render
   useEffect(() => {
@@ -119,11 +128,13 @@ export default function ProductionPage() {
     const entryDate = new Date(entry.date)
     if (isNaN(entryDate.getTime())) return false
     
+    // If activeView is "all" or no date range is selected, only apply search and product filters
+    if (activeView === "all" || !dateRange?.from) {
+      return matchesSearch && matchesProduct
+    }
+    
     // Set time to start of day for entry date
     entryDate.setHours(0, 0, 0, 0)
-    
-    // If no date range is selected, show all entries
-    if (!dateRange?.from) return matchesSearch && matchesProduct
     
     // If only from date is selected, treat it as a single day filter
     if (!dateRange.to) {
@@ -344,6 +355,70 @@ export default function ProductionPage() {
       
       <QuickNav />
       
+      {/* Add date range filter buttons */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <Button
+          variant={activeView === "today" ? "default" : "outline"}
+          size="sm"
+          onClick={() => {
+            setDateRange(getDateRangeForPeriod("today"));
+            setActiveView("today");
+          }}
+        >
+          Today
+        </Button>
+        <Button
+          variant={activeView === "week" ? "default" : "outline"}
+          size="sm"
+          onClick={() => {
+            setDateRange(getDateRangeForPeriod("week"));
+            setActiveView("week");
+          }}
+        >
+          This Week
+        </Button>
+        <Button
+          variant={activeView === "month" ? "default" : "outline"}
+          size="sm"
+          onClick={() => {
+            setDateRange(getDateRangeForPeriod("month"));
+            setActiveView("month");
+          }}
+        >
+          This Month
+        </Button>
+        <Button
+          variant={activeView === "three_months" ? "default" : "outline"}
+          size="sm"
+          onClick={() => {
+            setDateRange(getDateRangeForPeriod("three_months"));
+            setActiveView("three_months");
+          }}
+        >
+          Last 3 Months
+        </Button>
+        <Button
+          variant={activeView === "quarter" ? "default" : "outline"}
+          size="sm"
+          onClick={() => {
+            setDateRange(getDateRangeForPeriod("quarter"));
+            setActiveView("quarter");
+          }}
+        >
+          This Quarter
+        </Button>
+        <Button
+          variant={activeView === "year" ? "default" : "outline"}
+          size="sm"
+          onClick={() => {
+            setDateRange(getDateRangeForPeriod("year"));
+            setActiveView("year");
+          }}
+        >
+          This Year
+        </Button>
+      </div>
+
       <div className="grid gap-8 lg:grid-cols-2">
         <div className="space-y-8">
           <Card className="transition-all hover:shadow-md dark:shadow-none dark:hover:shadow-none dark:border-border/50">
@@ -466,14 +541,14 @@ export default function ProductionPage() {
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">From:</span>
                   <Select
-                    value={dateRange?.from ? dateRange.from.getFullYear().toString() : new Date().getFullYear().toString()}
+                    value={dateRange?.from ? dateRange.from.getFullYear().toString() : "2010"}
                     onValueChange={(year) => handleFromDateChange('year', year)}
                   >
                     <SelectTrigger className="w-[100px]">
                       <SelectValue placeholder="Year" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                      {Array.from({ length: new Date().getFullYear() - 2010 + 1 }, (_, i) => new Date().getFullYear() - i).map((year) => (
                         <SelectItem key={year} value={year.toString()}>
                           {year}
                         </SelectItem>
@@ -587,7 +662,10 @@ export default function ProductionPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    setDateRange(undefined);
+                    const startDate = new Date(2010, 0, 1); // January 1st, 2010
+                    const endDate = new Date();
+                    setDateRange({ from: startDate, to: endDate });
+                    setActiveView("all");
                   }}
                   className="h-8"
                 >

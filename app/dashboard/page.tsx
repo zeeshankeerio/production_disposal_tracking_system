@@ -113,26 +113,40 @@ const getDateRangeForPeriod = (period: string): DateRange => {
   switch(period) {
     case "today":
       return { from: startDate, to: today }
-    case "yesterday":
-      const yesterday = new Date(startDate)
-      yesterday.setDate(yesterday.getDate() - 1)
-      return { from: yesterday, to: yesterday }
     case "week":
       const weekStart = new Date(startDate)
-      weekStart.setDate(weekStart.getDate() - 7)
+      // Get Monday of current week (0 is Sunday, 1 is Monday)
+      const day = weekStart.getDay()
+      const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1) // Adjust for Sunday
+      weekStart.setDate(diff)
       return { from: weekStart, to: today }
     case "month":
       const monthStart = new Date(startDate)
-      monthStart.setDate(monthStart.getDate() - 30)
+      monthStart.setDate(1) // Start from first day of current month
       return { from: monthStart, to: today }
+    case "three_months":
+      const threeMonthsStart = new Date(startDate)
+      threeMonthsStart.setMonth(threeMonthsStart.getMonth() - 3)
+      threeMonthsStart.setDate(1) // Start from first day of the month
+      return { from: threeMonthsStart, to: today }
     case "quarter":
       const quarterStart = new Date(startDate)
-      quarterStart.setDate(quarterStart.getDate() - 90)
+      const currentQuarter = Math.floor(quarterStart.getMonth() / 3)
+      quarterStart.setMonth(currentQuarter * 3)
+      quarterStart.setDate(1)
       return { from: quarterStart, to: today }
     case "year":
       const yearStart = new Date(startDate)
-      yearStart.setDate(yearStart.getDate() - 365)
+      yearStart.setMonth(0)
+      yearStart.setDate(1)
       return { from: yearStart, to: today }
+    case "all":
+      // Set to a reasonable start date (e.g., 5 years ago)
+      const allTimeStart = new Date(startDate)
+      allTimeStart.setFullYear(allTimeStart.getFullYear() - 5)
+      allTimeStart.setMonth(0)
+      allTimeStart.setDate(1)
+      return { from: allTimeStart, to: today }
     default:
       return { from: startDate, to: today }
   }
@@ -536,6 +550,70 @@ export default function DashboardPage() {
       </div>
       
       <QuickNav />
+      
+      {/* Add this before the date range picker section */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        <Button
+          variant={activeView === "today" ? "default" : "outline"}
+          size="sm"
+          onClick={() => {
+            setDateRange(getDateRangeForPeriod("today"));
+            setActiveView("today");
+          }}
+        >
+          Today
+        </Button>
+        <Button
+          variant={activeView === "week" ? "default" : "outline"}
+          size="sm"
+          onClick={() => {
+            setDateRange(getDateRangeForPeriod("week"));
+            setActiveView("week");
+          }}
+        >
+          This Week
+        </Button>
+        <Button
+          variant={activeView === "month" ? "default" : "outline"}
+          size="sm"
+          onClick={() => {
+            setDateRange(getDateRangeForPeriod("month"));
+            setActiveView("month");
+          }}
+        >
+          This Month
+        </Button>
+        <Button
+          variant={activeView === "three_months" ? "default" : "outline"}
+          size="sm"
+          onClick={() => {
+            setDateRange(getDateRangeForPeriod("three_months"));
+            setActiveView("three_months");
+          }}
+        >
+          Last 3 Months
+        </Button>
+        <Button
+          variant={activeView === "quarter" ? "default" : "outline"}
+          size="sm"
+          onClick={() => {
+            setDateRange(getDateRangeForPeriod("quarter"));
+            setActiveView("quarter");
+          }}
+        >
+          This Quarter
+        </Button>
+        <Button
+          variant={activeView === "year" ? "default" : "outline"}
+          size="sm"
+          onClick={() => {
+            setDateRange(getDateRangeForPeriod("year"));
+            setActiveView("year");
+          }}
+        >
+          This Year
+        </Button>
+      </div>
       
       {/* Simplified Date Filter */}
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border-b pb-4">
