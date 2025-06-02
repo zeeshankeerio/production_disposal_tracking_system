@@ -20,6 +20,7 @@ import { PageRecentEntries } from "@/components/page-recent-entries"
 import { EntriesListView } from "@/components/entries-list-view"
 import { CopyrightFooter } from "@/components/copyright-footer"
 import { QuickNav } from "@/components/quick-nav"
+import { isSameDay, isWithinInterval } from "date-fns"
 
 // Custom tooltip component
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -38,6 +39,54 @@ const CustomTooltip = ({ active, payload, label }: any) => {
     );
   }
   return null;
+};
+
+// Helper function to get date range for predefined periods
+const getDateRangeForPeriod = (period: string): DateRange => {
+  const today = new Date()
+  today.setHours(23, 59, 59, 999)
+  
+  const startDate = new Date()
+  startDate.setHours(0, 0, 0, 0)
+  
+  switch(period) {
+    case "today":
+      return { from: startDate, to: today }
+    case "yesterday":
+      const yesterday = new Date(startDate)
+      yesterday.setDate(yesterday.getDate() - 1)
+      return { from: yesterday, to: yesterday }
+    case "week":
+      const weekStart = new Date(startDate)
+      weekStart.setDate(weekStart.getDate() - 7)
+      return { from: weekStart, to: today }
+    case "month":
+      const monthStart = new Date(startDate)
+      monthStart.setDate(monthStart.getDate() - 30)
+      return { from: monthStart, to: today }
+    case "quarter":
+      const quarterStart = new Date(startDate)
+      quarterStart.setDate(quarterStart.getDate() - 90)
+      return { from: quarterStart, to: today }
+    case "year":
+      const yearStart = new Date(startDate)
+      yearStart.setDate(yearStart.getDate() - 365)
+      return { from: yearStart, to: today }
+    default:
+      return { from: startDate, to: today }
+  }
+}
+
+// Add these helper functions at the top of the file, after the imports
+const getDaysInMonth = (year: number, month: number): number => {
+  return new Date(year, month + 1, 0).getDate();
+};
+
+const isValidDate = (year: number, month: number, day: number): boolean => {
+  const date = new Date(year, month, day);
+  return date.getFullYear() === year && 
+         date.getMonth() === month && 
+         date.getDate() === day;
 };
 
 export default function ProductionPage() {
@@ -68,11 +117,34 @@ export default function ProductionPage() {
     const matchesProduct = selectedProduct === "all" || entry.product_name === selectedProduct
     
     const entryDate = new Date(entry.date)
-    const isInDateRange = dateRange?.from && dateRange?.to
-      ? entryDate >= dateRange.from && entryDate <= dateRange.to
-      : true
+    if (isNaN(entryDate.getTime())) return false
     
-    return matchesSearch && matchesProduct && isInDateRange
+    // Set time to start of day for entry date
+    entryDate.setHours(0, 0, 0, 0)
+    
+    // If no date range is selected, show all entries
+    if (!dateRange?.from) return matchesSearch && matchesProduct
+    
+    // If only from date is selected, treat it as a single day filter
+    if (!dateRange.to) {
+      const singleDay = new Date(dateRange.from)
+      singleDay.setHours(0, 0, 0, 0)
+      return isSameDay(entryDate, singleDay) && matchesSearch && matchesProduct
+    }
+    
+    // For date range, set proper start and end times
+    const startDate = new Date(dateRange.from)
+    startDate.setHours(0, 0, 0, 0)
+    const endDate = new Date(dateRange.to)
+    endDate.setHours(23, 59, 59, 999)
+    
+    // Check if entry date falls within the range
+    const isInDateRange = isWithinInterval(entryDate, {
+      start: startDate,
+      end: endDate
+    })
+    
+    return isInDateRange && matchesSearch && matchesProduct
   })
   
   // Sort entries by date
@@ -175,6 +247,45 @@ export default function ProductionPage() {
       description: `Production data has been exported to CSV`,
     })
   }
+  
+  // Add the handlers inside the component
+  const handleFromDateChange = (type: 'year' | 'month' | 'day', value: string) => {
+    const currentDate = dateRange?.from || new Date();
+    const newDate = new Date(currentDate);
+    
+    switch(type) {
+      case 'year':
+        newDate.setFullYear(parseInt(value));
+        break;
+      case 'month':
+        newDate.setMonth(parseInt(value));
+        break;
+      case 'day':
+        newDate.setDate(parseInt(value));
+        break;
+    }
+    
+    setDateRange((prev: DateRange | undefined) => prev ? { ...prev, from: newDate } : { from: newDate, to: newDate });
+  };
+
+  const handleToDateChange = (type: 'year' | 'month' | 'day', value: string) => {
+    const currentDate = dateRange?.to || new Date();
+    const newDate = new Date(currentDate);
+    
+    switch(type) {
+      case 'year':
+        newDate.setFullYear(parseInt(value));
+        break;
+      case 'month':
+        newDate.setMonth(parseInt(value));
+        break;
+      case 'day':
+        newDate.setDate(parseInt(value));
+        break;
+    }
+    
+    setDateRange((prev: DateRange | undefined) => prev ? { ...prev, to: newDate } : { from: newDate, to: newDate });
+  };
   
   if (!mounted) {
     return (
@@ -349,6 +460,142 @@ export default function ProductionPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border-b pb-4">
+            <div className="flex flex-wrap gap-4 items-center">
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">From:</span>
+                  <Select
+                    value={dateRange?.from ? dateRange.from.getFullYear().toString() : new Date().getFullYear().toString()}
+                    onValueChange={(year) => handleFromDateChange('year', year)}
+                  >
+                    <SelectTrigger className="w-[100px]">
+                      <SelectValue placeholder="Year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={dateRange?.from ? dateRange.from.getMonth().toString() : new Date().getMonth().toString()}
+                    onValueChange={(month) => handleFromDateChange('month', month)}
+                  >
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 12 }, (_, i) => ({
+                        value: i.toString(),
+                        label: new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
+                      })).map(({ value, label }) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={dateRange?.from ? dateRange.from.getDate().toString() : new Date().getDate().toString()}
+                    onValueChange={(day) => handleFromDateChange('day', day)}
+                  >
+                    <SelectTrigger className="w-[80px]">
+                      <SelectValue placeholder="Day" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from(
+                        { length: getDaysInMonth(
+                          dateRange?.from ? dateRange.from.getFullYear() : new Date().getFullYear(),
+                          dateRange?.from ? dateRange.from.getMonth() : new Date().getMonth()
+                        )},
+                        (_, i) => i + 1
+                      ).map((day) => (
+                        <SelectItem key={day} value={day.toString()}>
+                          {day}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">Till:</span>
+                  <Select
+                    value={dateRange?.to ? dateRange.to.getFullYear().toString() : new Date().getFullYear().toString()}
+                    onValueChange={(year) => handleToDateChange('year', year)}
+                  >
+                    <SelectTrigger className="w-[100px]">
+                      <SelectValue placeholder="Year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={dateRange?.to ? dateRange.to.getMonth().toString() : new Date().getMonth().toString()}
+                    onValueChange={(month) => handleToDateChange('month', month)}
+                  >
+                    <SelectTrigger className="w-[120px]">
+                      <SelectValue placeholder="Month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 12 }, (_, i) => ({
+                        value: i.toString(),
+                        label: new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
+                      })).map(({ value, label }) => (
+                        <SelectItem key={value} value={value}>
+                          {label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select
+                    value={dateRange?.to ? dateRange.to.getDate().toString() : new Date().getDate().toString()}
+                    onValueChange={(day) => handleToDateChange('day', day)}
+                  >
+                    <SelectTrigger className="w-[80px]">
+                      <SelectValue placeholder="Day" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from(
+                        { length: getDaysInMonth(
+                          dateRange?.to ? dateRange.to.getFullYear() : new Date().getFullYear(),
+                          dateRange?.to ? dateRange.to.getMonth() : new Date().getMonth()
+                        )},
+                        (_, i) => i + 1
+                      ).map((day) => (
+                        <SelectItem key={day} value={day.toString()}>
+                          {day}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setDateRange(undefined);
+                  }}
+                  className="h-8"
+                >
+                  Clear
+                </Button>
+              </div>
+            </div>
+          </div>
           <EntriesListView
             entries={productionEntries}
             title="All Production Entries"

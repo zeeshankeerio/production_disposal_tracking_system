@@ -29,19 +29,21 @@ import { QuickNav } from "@/components/quick-nav"
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-background border border-border rounded-md shadow-md p-3 backdrop-blur-sm dark:bg-background/90 dark:border-border/50">
-        <p className="text-sm font-semibold mb-1">{label}</p>
-        {payload.map((entry: any, index: number) => (
-          <div key={index} className="flex items-center text-xs">
-            <div className="h-2 w-2 rounded-full mr-2" style={{ backgroundColor: entry.color }} />
-            <span className="font-medium">{entry.name}: </span>
-            <span className="ml-1">
-              {entry.value}
-              {entry.name.toLowerCase().includes('rate') || entry.name.toLowerCase().includes('efficiency') 
-                ? '%' : ''}
-            </span>
-          </div>
-        ))}
+      <div className="bg-background border border-border rounded-md shadow-md p-3 backdrop-blur-sm">
+        <p className="text-sm font-semibold">{label}</p>
+        {payload.map((entry: any, index: number) => {
+          const value = entry.value || 0;
+          const formattedValue = typeof value === 'number' 
+            ? value.toLocaleString(undefined, { maximumFractionDigits: 1 })
+            : value;
+          
+          return (
+            <p key={index} className="text-sm" style={{ color: entry.color }}>
+              {entry.name}: {formattedValue}
+              {entry.name.includes('Rate') || entry.name.includes('Efficiency') ? '%' : ''}
+            </p>
+          );
+        })}
       </div>
     );
   }
@@ -54,6 +56,87 @@ const CHART_COLORS = {
   rate: "#7856FF",
   efficiency: "#00C288"
 };
+
+// Helper function to safely calculate percentages
+const calculatePercentage = (value: number, total: number): number => {
+  if (!total || total <= 0) return 0;
+  return parseFloat(((value / total) * 100).toFixed(1));
+};
+
+// Helper function to safely calculate efficiency
+const calculateEfficiency = (production: number, disposal: number): number => {
+  if (!production || production <= 0) return 0;
+  return parseFloat((100 - ((disposal / production) * 100)).toFixed(1));
+};
+
+// Helper function to validate quantity
+const validateQuantity = (quantity: number): number => {
+  return Math.max(0, quantity || 0);
+};
+
+// Helper function to validate shift
+const validateShift = (shift: string | undefined): string => {
+  if (!shift) return 'Unknown';
+  const normalizedShift = shift.toLowerCase().trim();
+  return ['day', 'night', 'morning', 'evening'].includes(normalizedShift) 
+    ? normalizedShift.charAt(0).toUpperCase() + normalizedShift.slice(1)
+    : 'Unknown';
+};
+
+// Helper function to calculate shift efficiency
+const calculateShiftEfficiency = (production: number, disposal: number): number => {
+  if (!production || production <= 0) return 0;
+  const efficiency = 100 - ((disposal / production) * 100);
+  return parseFloat(Math.max(0, Math.min(100, efficiency)).toFixed(1));
+};
+
+// Add these helper functions at the top of the file, after the imports
+const getDaysInMonth = (year: number, month: number): number => {
+  return new Date(year, month + 1, 0).getDate();
+};
+
+const isValidDate = (year: number, month: number, day: number): boolean => {
+  const date = new Date(year, month, day);
+  return date.getFullYear() === year && 
+         date.getMonth() === month && 
+         date.getDate() === day;
+};
+
+// Helper function to get date range for predefined periods
+const getDateRangeForPeriod = (period: string): DateRange => {
+  const today = new Date()
+  today.setHours(23, 59, 59, 999)
+  
+  const startDate = new Date()
+  startDate.setHours(0, 0, 0, 0)
+  
+  switch(period) {
+    case "today":
+      return { from: startDate, to: today }
+    case "yesterday":
+      const yesterday = new Date(startDate)
+      yesterday.setDate(yesterday.getDate() - 1)
+      return { from: yesterday, to: yesterday }
+    case "week":
+      const weekStart = new Date(startDate)
+      weekStart.setDate(weekStart.getDate() - 7)
+      return { from: weekStart, to: today }
+    case "month":
+      const monthStart = new Date(startDate)
+      monthStart.setDate(monthStart.getDate() - 30)
+      return { from: monthStart, to: today }
+    case "quarter":
+      const quarterStart = new Date(startDate)
+      quarterStart.setDate(quarterStart.getDate() - 90)
+      return { from: quarterStart, to: today }
+    case "year":
+      const yearStart = new Date(startDate)
+      yearStart.setDate(yearStart.getDate() - 365)
+      return { from: yearStart, to: today }
+    default:
+      return { from: startDate, to: today }
+  }
+}
 
 export default function DashboardPage() {
   const { toast } = useToast()
@@ -83,21 +166,37 @@ export default function DashboardPage() {
       const entryDate = new Date(entry.date)
       if (isNaN(entryDate.getTime())) return false
       
+      // Set time to start of day for entry date
+      entryDate.setHours(0, 0, 0, 0)
+      
       // If only from date is selected, treat it as a single day filter
-      if (!dateRange.to) {
-        return isSameDay(entryDate, dateRange.from as Date)
+      if (!dateRange.to && dateRange.from) {
+        const singleDay = new Date(dateRange.from.getTime())
+        singleDay.setHours(0, 0, 0, 0)
+        return isSameDay(entryDate, singleDay)
       }
-      // Otherwise use the date range
-      const isInDateRange = isWithinInterval(entryDate, {
-        start: dateRange.from as Date,
-        end: dateRange.to as Date
-      })
       
-      const matchesProduct = selectedProduct === "all" || entry.product_name === selectedProduct
-      const matchesCategory = selectedCategory === "all" || 
-        products.find(p => p.name === entry.product_name)?.category === selectedCategory
+      // For date range, set proper start and end times
+      if (dateRange.from && dateRange.to) {
+        const startDate = new Date(dateRange.from.getTime())
+        startDate.setHours(0, 0, 0, 0)
+        const endDate = new Date(dateRange.to.getTime())
+        endDate.setHours(23, 59, 59, 999)
+        
+        // Check if entry date falls within the range
+        const isInDateRange = isWithinInterval(entryDate, {
+          start: startDate,
+          end: endDate
+        })
+        
+        const matchesProduct = selectedProduct === "all" || entry.product_name === selectedProduct
+        const matchesCategory = selectedCategory === "all" || 
+          products.find(p => p.name === entry.product_name)?.category === selectedCategory
+        
+        return isInDateRange && matchesProduct && matchesCategory
+      }
       
-      return isInDateRange && matchesProduct && matchesCategory
+      return false
     })
   }, [productionEntries, dateRange, selectedProduct, selectedCategory, products])
   
@@ -110,22 +209,38 @@ export default function DashboardPage() {
       const entryDate = new Date(entry.date)
       if (isNaN(entryDate.getTime())) return false
       
+      // Set time to start of day for entry date
+      entryDate.setHours(0, 0, 0, 0)
+      
       // If only from date is selected, treat it as a single day filter
-      if (!dateRange.to) {
-        return isSameDay(entryDate, dateRange.from as Date)
+      if (!dateRange.to && dateRange.from) {
+        const singleDay = new Date(dateRange.from.getTime())
+        singleDay.setHours(0, 0, 0, 0)
+        return isSameDay(entryDate, singleDay)
       }
-      // Otherwise use the date range
-      const isInDateRange = isWithinInterval(entryDate, {
-        start: dateRange.from as Date,
-        end: dateRange.to as Date
-      })
       
-      const matchesProduct = selectedProduct === "all" || entry.product_name === selectedProduct
-      const matchesReason = selectedReason === "all" || entry.reason === selectedReason
-      const matchesCategory = selectedCategory === "all" || 
-        products.find(p => p.name === entry.product_name)?.category === selectedCategory
+      // For date range, set proper start and end times
+      if (dateRange.from && dateRange.to) {
+        const startDate = new Date(dateRange.from.getTime())
+        startDate.setHours(0, 0, 0, 0)
+        const endDate = new Date(dateRange.to.getTime())
+        endDate.setHours(23, 59, 59, 999)
+        
+        // Check if entry date falls within the range
+        const isInDateRange = isWithinInterval(entryDate, {
+          start: startDate,
+          end: endDate
+        })
+        
+        const matchesProduct = selectedProduct === "all" || entry.product_name === selectedProduct
+        const matchesReason = selectedReason === "all" || entry.reason === selectedReason
+        const matchesCategory = selectedCategory === "all" || 
+          products.find(p => p.name === entry.product_name)?.category === selectedCategory
+        
+        return isInDateRange && matchesProduct && matchesReason && matchesCategory
+      }
       
-      return isInDateRange && matchesProduct && matchesReason && matchesCategory
+      return false
     })
   }, [disposalEntries, dateRange, selectedProduct, selectedReason, selectedCategory, products])
 
@@ -253,172 +368,130 @@ export default function DashboardPage() {
     setActiveView(range)
   }
   
+  // Update the date range handlers to ensure proper type handling
+  const handleFromDateChange = (type: 'year' | 'month' | 'day', value: string) => {
+    const currentDate = dateRange?.from || new Date();
+    const newDate = new Date(currentDate);
+    
+    switch(type) {
+      case 'year':
+        newDate.setFullYear(parseInt(value));
+        break;
+      case 'month':
+        newDate.setMonth(parseInt(value));
+        break;
+      case 'day':
+        newDate.setDate(parseInt(value));
+        break;
+    }
+    
+    setDateRange(prev => prev ? { ...prev, from: newDate } : { from: newDate, to: newDate });
+  };
+
+  const handleToDateChange = (type: 'year' | 'month' | 'day', value: string) => {
+    const currentDate = dateRange?.to || new Date();
+    const newDate = new Date(currentDate);
+    
+    switch(type) {
+      case 'year':
+        newDate.setFullYear(parseInt(value));
+        break;
+      case 'month':
+        newDate.setMonth(parseInt(value));
+        break;
+      case 'day':
+        newDate.setDate(parseInt(value));
+        break;
+    }
+    
+    setDateRange(prev => prev ? { ...prev, to: newDate } : { from: newDate, to: newDate });
+  };
+  
   // Process data for dashboard when entries change
   useEffect(() => {
     if (!isLoading) {
-      // Calculate product statistics with proper type checking and validation
-      const productMap = new Map<string, { name: string, production: number, disposal: number }>()
+      // Process data for dashboard
+      const productStatsMap = new Map<string, { production: number, disposal: number }>();
+      const reasonStatsMap = new Map<string, number>();
+      const dateMap = new Map<string, { production: number, disposal: number, date: string }>();
       
-      // Sum production by product with validation
+      // Process production entries
       filteredProductionEntries.forEach(entry => {
-        if (!entry || !entry.product_name || typeof entry.quantity !== 'number' || isNaN(entry.quantity)) return
+        const date = formatDate(entry.date);
+        const product = entry.product_name;
+        const quantity = validateQuantity(entry.quantity);
         
-        const current = productMap.get(entry.product_name) || { 
-          name: entry.product_name,
-          production: 0, 
-          disposal: 0 
-        }
+        // Update product stats
+        const currentProduct = productStatsMap.get(product) || { production: 0, disposal: 0 };
+        productStatsMap.set(product, {
+          ...currentProduct,
+          production: currentProduct.production + quantity
+        });
         
-        productMap.set(entry.product_name, {
-          ...current,
-          production: current.production + entry.quantity
-        })
-      })
+        // Update date stats
+        const currentDate = dateMap.get(date) || { production: 0, disposal: 0, date };
+        dateMap.set(date, {
+          ...currentDate,
+          production: currentDate.production + quantity
+        });
+      });
       
-      // Sum disposal by product with validation
+      // Process disposal entries
       filteredDisposalEntries.forEach(entry => {
-        if (!entry || !entry.product_name || typeof entry.quantity !== 'number' || isNaN(entry.quantity)) return
+        const date = formatDate(entry.date);
+        const product = entry.product_name;
+        const reason = entry.reason;
+        const quantity = validateQuantity(entry.quantity);
         
-        const current = productMap.get(entry.product_name) || { 
-          name: entry.product_name,
-          production: 0, 
-          disposal: 0 
-        }
+        // Update product stats
+        const currentProduct = productStatsMap.get(product) || { production: 0, disposal: 0 };
+        productStatsMap.set(product, {
+          ...currentProduct,
+          disposal: currentProduct.disposal + quantity
+        });
         
-        productMap.set(entry.product_name, {
-          ...current,
-          disposal: current.disposal + entry.quantity
-        })
-      })
-      
-      // Calculate stats with disposal rate and efficiency
-      const stats = Array.from(productMap.values())
-        .map(({ name, production, disposal }) => {
-          const rate = production > 0 ? (disposal / production) * 100 : 0
-          const efficiency = 100 - rate
-          
-          return {
-            name,
-            production,
-            disposal,
-            disposalRate: parseFloat(rate.toFixed(1)),
-            efficiency: parseFloat(efficiency.toFixed(1))
-          }
-        })
-        .filter(s => s.production > 0)
-        .sort((a, b) => b.production - a.production)
-      
-      setProductStats(stats)
-      
-      // Calculate disposal reasons with validation
-      const reasons: Record<string, number> = {}
-      let totalDisposal = 0
-      
-      filteredDisposalEntries.forEach(entry => {
-        if (!entry || !entry.reason || typeof entry.quantity !== 'number' || isNaN(entry.quantity)) return
+        // Update reason stats
+        const currentReason = reasonStatsMap.get(reason) || 0;
+        reasonStatsMap.set(reason, currentReason + quantity);
         
-          reasons[entry.reason] = (reasons[entry.reason] || 0) + entry.quantity
-        totalDisposal += entry.quantity
-      })
+        // Update date stats
+        const currentDate = dateMap.get(date) || { production: 0, disposal: 0, date };
+        dateMap.set(date, {
+          ...currentDate,
+          disposal: currentDate.disposal + quantity
+        });
+      });
       
-      const reasonData = Object.entries(reasons)
-        .map(([name, value]) => ({
+      // Convert maps to arrays and calculate additional metrics
+      const productStatsArray = Array.from(productStatsMap.entries())
+        .map(([name, stats]) => ({
           name,
-          value,
-          percentage: totalDisposal > 0 ? parseFloat(((value / totalDisposal) * 100).toFixed(1)) : 0
+          production: stats.production,
+          disposal: stats.disposal,
+          disposalRate: calculatePercentage(stats.disposal, stats.production),
+          efficiency: calculateEfficiency(stats.production, stats.disposal)
         }))
-        .sort((a, b) => b.value - a.value)
+        .sort((a, b) => b.production - a.production);
       
-      setReasonStats(reasonData)
+      const reasonStatsArray = Array.from(reasonStatsMap.entries())
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value);
       
-      // Create aggregated time series data by date with validation
-      const dateMap = new Map<string, { date: string, formattedDate: string, production: number, disposal: number }>()
-      
-      // Calculate the number of days between dates
-      const days = dateRange?.from && dateRange?.to 
-        ? differenceInDays(dateRange.to, dateRange.from) + 1
-        : 7
-      
-      // Create dates for the range
-      const endDate = dateRange?.to || new Date()
-      
-      for (let i = 0; i < days; i++) {
-        const date = subDays(endDate, days - i - 1)
-        if (!date || isNaN(date.getTime())) continue
-        
-        const dateStr = format(date, "yyyy-MM-dd")
-        const formattedDate = format(date, "MMM dd")
-        
-        dateMap.set(dateStr, {
-          date: dateStr,
-          formattedDate,
-          production: 0,
-          disposal: 0
-        })
-      }
-      
-      // Sum production by date with validation
-      filteredProductionEntries.forEach(entry => {
-        if (!entry || !entry.date || typeof entry.quantity !== 'number' || isNaN(entry.quantity)) return
-        
-        try {
-          const entryDate = new Date(entry.date)
-          if (isNaN(entryDate.getTime())) return
-          
-          const dateStr = format(entryDate, "yyyy-MM-dd")
-          
-          if (dateMap.has(dateStr)) {
-            const current = dateMap.get(dateStr)!
-            dateMap.set(dateStr, {
-              ...current,
-              production: current.production + entry.quantity
-            })
-          }
-        } catch (error) {
-          console.error("Error processing production entry date:", error)
-          return
-        }
-      })
-      
-      // Sum disposal by date with validation
-      filteredDisposalEntries.forEach(entry => {
-        if (!entry || !entry.date || typeof entry.quantity !== 'number' || isNaN(entry.quantity)) return
-        
-        try {
-          const entryDate = new Date(entry.date)
-          if (isNaN(entryDate.getTime())) return
-          
-          const dateStr = format(entryDate, "yyyy-MM-dd")
-          
-          if (dateMap.has(dateStr)) {
-            const current = dateMap.get(dateStr)!
-            dateMap.set(dateStr, {
-              ...current,
-              disposal: current.disposal + entry.quantity
-            })
-          }
-        } catch (error) {
-          console.error("Error processing disposal entry date:", error)
-          return
-        }
-      })
-      
-      // Convert map to array and sort by date
+      // Convert date map to array and sort by date
       const timeData = Array.from(dateMap.values())
         .sort((a, b) => a.date.localeCompare(b.date))
         .map(item => ({
           ...item,
-          disposalRate: item.production > 0 
-            ? parseFloat(((item.disposal / item.production) * 100).toFixed(1)) 
-            : 0,
-          efficiency: item.production > 0
-            ? parseFloat((100 - ((item.disposal / item.production) * 100)).toFixed(1))
-            : 0
-        }))
+          formattedDate: format(new Date(item.date), 'MMM dd'),
+          disposalRate: calculatePercentage(item.disposal, item.production),
+          efficiency: calculateEfficiency(item.production, item.disposal)
+        }));
       
-      setChartData(timeData)
+      setProductStats(productStatsArray);
+      setReasonStats(reasonStatsArray);
+      setChartData(timeData);
     }
-  }, [filteredProductionEntries, filteredDisposalEntries, isLoading, dateRange])
+  }, [filteredProductionEntries, filteredDisposalEntries, isLoading]);
   
   // Use useEffect to set mounted state after initial render
   useEffect(() => {
@@ -464,6 +537,144 @@ export default function DashboardPage() {
       
       <QuickNav />
       
+      {/* Simplified Date Filter */}
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border-b pb-4">
+        <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">From:</span>
+              <Select
+                value={dateRange?.from ? dateRange.from.getFullYear().toString() : new Date().getFullYear().toString()}
+                onValueChange={(year) => handleFromDateChange('year', year)}
+              >
+                <SelectTrigger className="w-[100px]">
+                  <SelectValue placeholder="Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={dateRange?.from ? dateRange.from.getMonth().toString() : new Date().getMonth().toString()}
+                onValueChange={(month) => handleFromDateChange('month', month)}
+              >
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Month" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }, (_, i) => ({
+                    value: i.toString(),
+                    label: new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
+                  })).map(({ value, label }) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={dateRange?.from ? dateRange.from.getDate().toString() : new Date().getDate().toString()}
+                onValueChange={(day) => handleFromDateChange('day', day)}
+              >
+                <SelectTrigger className="w-[80px]">
+                  <SelectValue placeholder="Day" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from(
+                    { length: getDaysInMonth(
+                      dateRange?.from ? dateRange.from.getFullYear() : new Date().getFullYear(),
+                      dateRange?.from ? dateRange.from.getMonth() : new Date().getMonth()
+                    )},
+                    (_, i) => i + 1
+                  ).map((day) => (
+                    <SelectItem key={day} value={day.toString()}>
+                      {day}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Till:</span>
+              <Select
+                value={dateRange?.to ? dateRange.to.getFullYear().toString() : new Date().getFullYear().toString()}
+                onValueChange={(year) => handleToDateChange('year', year)}
+              >
+                <SelectTrigger className="w-[100px]">
+                  <SelectValue placeholder="Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={dateRange?.to ? dateRange.to.getMonth().toString() : new Date().getMonth().toString()}
+                onValueChange={(month) => handleToDateChange('month', month)}
+              >
+                <SelectTrigger className="w-[120px]">
+                  <SelectValue placeholder="Month" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from({ length: 12 }, (_, i) => ({
+                    value: i.toString(),
+                    label: new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
+                  })).map(({ value, label }) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={dateRange?.to ? dateRange.to.getDate().toString() : new Date().getDate().toString()}
+                onValueChange={(day) => handleToDateChange('day', day)}
+              >
+                <SelectTrigger className="w-[80px]">
+                  <SelectValue placeholder="Day" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Array.from(
+                    { length: getDaysInMonth(
+                      dateRange?.to ? dateRange.to.getFullYear() : new Date().getFullYear(),
+                      dateRange?.to ? dateRange.to.getMonth() : new Date().getMonth()
+                    )},
+                    (_, i) => i + 1
+                  ).map((day) => (
+                    <SelectItem key={day} value={day.toString()}>
+                      {day}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setDateRange(undefined);
+              }}
+              className="h-8"
+            >
+              Clear
+            </Button>
+          </div>
+        </div>
+      </div>
+      
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h2>
@@ -496,41 +707,6 @@ export default function DashboardPage() {
       <div className="flex flex-col md:flex-row gap-4 items-center justify-between border-b pb-4">
         <div className="flex flex-wrap gap-2 items-center">
           <div className="flex items-center gap-2">
-            <Button
-              variant={activeView === "week" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setPredefinedDateRange("week")}
-              className="h-8"
-            >
-              Week
-            </Button>
-            <Button
-              variant={activeView === "month" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setPredefinedDateRange("month")}
-              className="h-8"
-            >
-              Month
-            </Button>
-            <Button
-              variant={activeView === "quarter" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setPredefinedDateRange("quarter")}
-              className="h-8"
-            >
-              Quarter
-            </Button>
-            <Button
-              variant={activeView === "year" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setPredefinedDateRange("year")}
-              className="h-8"
-            >
-              Year
-            </Button>
-          </div>
-          
-          <div className="flex items-center h-8 gap-2 ml-2">
             <Popover>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="h-8">
@@ -624,13 +800,6 @@ export default function DashboardPage() {
                 </div>
               </PopoverContent>
             </Popover>
-            
-            <DateRangePicker
-              value={dateRange}
-              onValueChange={setDateRange}
-              align="start"
-              className="h-8"
-            />
           </div>
         </div>
         
@@ -1014,10 +1183,10 @@ export default function DashboardPage() {
                         radius={[0, 4, 4, 0]}
                       >
                         {reasonStats.map((entry, index) => (
-                          <Cell 
-                            key={`cell-${index}`} 
-                            fill={`hsl(${index * 40}, 70%, 50%)`} 
-                          />
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={`hsl(${index * 40}, 70%, 50%)`} 
+                            />
                         ))}
                       </Bar>
                     </BarChart>
@@ -1522,43 +1691,84 @@ export default function DashboardPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                       data={(() => {
-                        const shiftData = new Map<string, { production: number, disposal: number }>()
+                        const shiftData = new Map<string, { production: number, disposal: number }>();
+                        
+                        // Initialize with all possible shifts
+                        ['Day', 'Night', 'Morning', 'Evening', 'Unknown'].forEach(shift => {
+                          shiftData.set(shift, { production: 0, disposal: 0 });
+                        });
                         
                         // Aggregate production by shift
                         filteredProductionEntries.forEach(entry => {
-                          const shift = entry.shift || 'Unknown'
-                          const current = shiftData.get(shift) || { production: 0, disposal: 0 }
+                          if (!entry || typeof entry.quantity !== 'number' || isNaN(entry.quantity)) return;
+                          
+                          const shift = validateShift(entry.shift);
+                          const current = shiftData.get(shift) || { production: 0, disposal: 0 };
                           shiftData.set(shift, {
                             ...current,
-                            production: current.production + entry.quantity
-                          })
-                        })
+                            production: current.production + validateQuantity(entry.quantity)
+                          });
+                        });
                         
                         // Aggregate disposal by shift
                         filteredDisposalEntries.forEach(entry => {
-                          const shift = entry.shift || 'Unknown'
-                          const current = shiftData.get(shift) || { production: 0, disposal: 0 }
+                          if (!entry || typeof entry.quantity !== 'number' || isNaN(entry.quantity)) return;
+                          
+                          const shift = validateShift(entry.shift);
+                          const current = shiftData.get(shift) || { production: 0, disposal: 0 };
                           shiftData.set(shift, {
                             ...current,
-                            disposal: current.disposal + entry.quantity
-                          })
-                        })
+                            disposal: current.disposal + validateQuantity(entry.quantity)
+                          });
+                        });
                         
+                        // Convert to array and calculate efficiency
                         return Array.from(shiftData.entries())
                           .map(([shift, data]) => ({
                             shift,
-                            efficiency: data.production > 0 
-                              ? parseFloat((100 - (data.disposal / data.production) * 100).toFixed(1))
-                              : 0
+                            production: data.production,
+                            disposal: data.disposal,
+                            efficiency: calculateShiftEfficiency(data.production, data.disposal)
                           }))
-                          .sort((a, b) => a.shift.localeCompare(b.shift))
+                          .filter(item => item.production > 0 || item.disposal > 0) // Only show shifts with data
+                          .sort((a, b) => {
+                            // Sort by shift name, but keep Unknown last
+                            if (a.shift === 'Unknown') return 1;
+                            if (b.shift === 'Unknown') return -1;
+                            return a.shift.localeCompare(b.shift);
+                          });
                       })()}
                       margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
                     >
                       <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                      <XAxis dataKey="shift" />
-                      <YAxis domain={[0, 100]} />
-                      <Tooltip content={<CustomTooltip />} />
+                      <XAxis 
+                        dataKey="shift" 
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value) => value === 'Unknown' ? 'Other' : value}
+                      />
+                      <YAxis 
+                        domain={[0, 100]} 
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value) => `${value}%`}
+                      />
+                      <Tooltip 
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const data = payload[0].payload;
+                            return (
+                              <div className="bg-background border border-border rounded-md shadow-md p-3 backdrop-blur-sm">
+                                <p className="text-sm font-semibold">{data.shift === 'Unknown' ? 'Other' : data.shift}</p>
+                                <p className="text-sm">Production: {data.production}</p>
+                                <p className="text-sm">Disposal: {data.disposal}</p>
+                                <p className="text-sm font-medium" style={{ color: CHART_COLORS.efficiency }}>
+                                  Efficiency: {data.efficiency}%
+                                </p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
                       <Bar 
                         dataKey="efficiency" 
                         fill={CHART_COLORS.efficiency}
