@@ -73,6 +73,87 @@ export default function DashboardPage() {
   const [chartType, setChartType] = useState<"bar" | "area" | "line">("area")
   const [mounted, setMounted] = useState(false)
   
+  // Filter data based on selected date range, product category, and product/reason filters
+  const filteredProductionEntries = useMemo(() => {
+    if (!dateRange?.from) return productionEntries
+    
+    return productionEntries.filter(entry => {
+      if (!entry || !entry.date) return false
+      
+      const entryDate = new Date(entry.date)
+      if (isNaN(entryDate.getTime())) return false
+      
+      // If only from date is selected, treat it as a single day filter
+      if (!dateRange.to) {
+        return isSameDay(entryDate, dateRange.from as Date)
+      }
+      // Otherwise use the date range
+      const isInDateRange = isWithinInterval(entryDate, {
+        start: dateRange.from as Date,
+        end: dateRange.to as Date
+      })
+      
+      const matchesProduct = selectedProduct === "all" || entry.product_name === selectedProduct
+      const matchesCategory = selectedCategory === "all" || 
+        products.find(p => p.name === entry.product_name)?.category === selectedCategory
+      
+      return isInDateRange && matchesProduct && matchesCategory
+    })
+  }, [productionEntries, dateRange, selectedProduct, selectedCategory, products])
+  
+  const filteredDisposalEntries = useMemo(() => {
+    if (!dateRange?.from) return disposalEntries
+    
+    return disposalEntries.filter(entry => {
+      if (!entry || !entry.date) return false
+      
+      const entryDate = new Date(entry.date)
+      if (isNaN(entryDate.getTime())) return false
+      
+      // If only from date is selected, treat it as a single day filter
+      if (!dateRange.to) {
+        return isSameDay(entryDate, dateRange.from as Date)
+      }
+      // Otherwise use the date range
+      const isInDateRange = isWithinInterval(entryDate, {
+        start: dateRange.from as Date,
+        end: dateRange.to as Date
+      })
+      
+      const matchesProduct = selectedProduct === "all" || entry.product_name === selectedProduct
+      const matchesReason = selectedReason === "all" || entry.reason === selectedReason
+      const matchesCategory = selectedCategory === "all" || 
+        products.find(p => p.name === entry.product_name)?.category === selectedCategory
+      
+      return isInDateRange && matchesProduct && matchesReason && matchesCategory
+    })
+  }, [disposalEntries, dateRange, selectedProduct, selectedReason, selectedCategory, products])
+
+  // Calculate shift distribution data
+  const productionShiftChartData = useMemo(() => {
+    const shiftData = new Map<string, number>()
+    filteredProductionEntries.forEach(entry => {
+      if (!entry || typeof entry.quantity !== 'number') return
+      const shift = entry.shift || 'Unknown'
+      shiftData.set(shift, (shiftData.get(shift) || 0) + entry.quantity)
+    })
+    return Array.from(shiftData.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [filteredProductionEntries])
+
+  const disposalShiftChartData = useMemo(() => {
+    const shiftData = new Map<string, number>()
+    filteredDisposalEntries.forEach(entry => {
+      if (!entry || typeof entry.quantity !== 'number') return
+      const shift = entry.shift || 'Unknown'
+      shiftData.set(shift, (shiftData.get(shift) || 0) + entry.quantity)
+    })
+    return Array.from(shiftData.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [filteredDisposalEntries])
+  
   // All possible reasons from disposal entries
   const allReasons = useMemo(() => {
     const reasons = new Set<string>()
@@ -172,71 +253,15 @@ export default function DashboardPage() {
     setActiveView(range)
   }
   
-  // Filter data based on selected date range, product category, and product/reason filters
-  const filteredProductionEntries = useMemo(() => {
-    if (!dateRange?.from) return productionEntries
-    
-    return productionEntries.filter(entry => {
-      if (!entry || !entry.date) return false
-      
-      const entryDate = new Date(entry.date)
-      if (isNaN(entryDate.getTime())) return false
-      
-      // If only from date is selected, treat it as a single day filter
-      if (!dateRange.to) {
-        return isSameDay(entryDate, dateRange.from as Date)
-      }
-      // Otherwise use the date range
-      const isInDateRange = isWithinInterval(entryDate, {
-        start: dateRange.from as Date,
-        end: dateRange.to as Date
-      })
-      
-      const matchesProduct = selectedProduct === "all" || entry.product_name === selectedProduct
-      const matchesCategory = selectedCategory === "all" || 
-        products.find(p => p.name === entry.product_name)?.category === selectedCategory
-      
-      return isInDateRange && matchesProduct && matchesCategory
-    })
-  }, [productionEntries, dateRange, selectedProduct, selectedCategory, products])
-  
-  const filteredDisposalEntries = useMemo(() => {
-    if (!dateRange?.from) return disposalEntries
-    
-    return disposalEntries.filter(entry => {
-      if (!entry || !entry.date) return false
-      
-      const entryDate = new Date(entry.date)
-      if (isNaN(entryDate.getTime())) return false
-      
-      // If only from date is selected, treat it as a single day filter
-      if (!dateRange.to) {
-        return isSameDay(entryDate, dateRange.from as Date)
-      }
-      // Otherwise use the date range
-      const isInDateRange = isWithinInterval(entryDate, {
-        start: dateRange.from as Date,
-        end: dateRange.to as Date
-      })
-      
-      const matchesProduct = selectedProduct === "all" || entry.product_name === selectedProduct
-      const matchesReason = selectedReason === "all" || entry.reason === selectedReason
-      const matchesCategory = selectedCategory === "all" || 
-        products.find(p => p.name === entry.product_name)?.category === selectedCategory
-      
-      return isInDateRange && matchesProduct && matchesReason && matchesCategory
-    })
-  }, [disposalEntries, dateRange, selectedProduct, selectedReason, selectedCategory, products])
-  
   // Process data for dashboard when entries change
   useEffect(() => {
     if (!isLoading) {
-      // Calculate product statistics
+      // Calculate product statistics with proper type checking and validation
       const productMap = new Map<string, { name: string, production: number, disposal: number }>()
       
-      // Sum production by product
+      // Sum production by product with validation
       filteredProductionEntries.forEach(entry => {
-        if (!entry || !entry.product_name || typeof entry.quantity !== 'number') return
+        if (!entry || !entry.product_name || typeof entry.quantity !== 'number' || isNaN(entry.quantity)) return
         
         const current = productMap.get(entry.product_name) || { 
           name: entry.product_name,
@@ -250,9 +275,9 @@ export default function DashboardPage() {
         })
       })
       
-      // Sum disposal by product
+      // Sum disposal by product with validation
       filteredDisposalEntries.forEach(entry => {
-        if (!entry || !entry.product_name || typeof entry.quantity !== 'number') return
+        if (!entry || !entry.product_name || typeof entry.quantity !== 'number' || isNaN(entry.quantity)) return
         
         const current = productMap.get(entry.product_name) || { 
           name: entry.product_name,
@@ -270,13 +295,14 @@ export default function DashboardPage() {
       const stats = Array.from(productMap.values())
         .map(({ name, production, disposal }) => {
           const rate = production > 0 ? (disposal / production) * 100 : 0
+          const efficiency = 100 - rate
           
           return {
             name,
             production,
             disposal,
             disposalRate: parseFloat(rate.toFixed(1)),
-            efficiency: parseFloat((100 - rate).toFixed(1))
+            efficiency: parseFloat(efficiency.toFixed(1))
           }
         })
         .filter(s => s.production > 0)
@@ -284,21 +310,28 @@ export default function DashboardPage() {
       
       setProductStats(stats)
       
-      // Calculate disposal reasons
+      // Calculate disposal reasons with validation
       const reasons: Record<string, number> = {}
+      let totalDisposal = 0
+      
       filteredDisposalEntries.forEach(entry => {
-        if (!entry || !entry.reason || typeof entry.quantity !== 'number') return
+        if (!entry || !entry.reason || typeof entry.quantity !== 'number' || isNaN(entry.quantity)) return
         
           reasons[entry.reason] = (reasons[entry.reason] || 0) + entry.quantity
+        totalDisposal += entry.quantity
       })
       
       const reasonData = Object.entries(reasons)
-        .map(([name, value]) => ({ name, value }))
+        .map(([name, value]) => ({
+          name,
+          value,
+          percentage: totalDisposal > 0 ? parseFloat(((value / totalDisposal) * 100).toFixed(1)) : 0
+        }))
         .sort((a, b) => b.value - a.value)
       
       setReasonStats(reasonData)
       
-      // Create aggregated time series data by date
+      // Create aggregated time series data by date with validation
       const dateMap = new Map<string, { date: string, formattedDate: string, production: number, disposal: number }>()
       
       // Calculate the number of days between dates
@@ -324,9 +357,9 @@ export default function DashboardPage() {
         })
       }
       
-      // Sum production by date
+      // Sum production by date with validation
       filteredProductionEntries.forEach(entry => {
-        if (!entry || !entry.date || typeof entry.quantity !== 'number') return
+        if (!entry || !entry.date || typeof entry.quantity !== 'number' || isNaN(entry.quantity)) return
         
         try {
           const entryDate = new Date(entry.date)
@@ -347,9 +380,9 @@ export default function DashboardPage() {
         }
       })
       
-      // Sum disposal by date
+      // Sum disposal by date with validation
       filteredDisposalEntries.forEach(entry => {
-        if (!entry || !entry.date || typeof entry.quantity !== 'number') return
+        if (!entry || !entry.date || typeof entry.quantity !== 'number' || isNaN(entry.quantity)) return
         
         try {
           const entryDate = new Date(entry.date)
@@ -377,6 +410,9 @@ export default function DashboardPage() {
           ...item,
           disposalRate: item.production > 0 
             ? parseFloat(((item.disposal / item.production) * 100).toFixed(1)) 
+            : 0,
+          efficiency: item.production > 0
+            ? parseFloat((100 - ((item.disposal / item.production) * 100)).toFixed(1))
             : 0
         }))
       
@@ -637,15 +673,15 @@ export default function DashboardPage() {
       {/* Quick Insights Charts */}
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         {/* Daily Production Trend */}
-        <Card className="transition-all hover:shadow-md">
+        <Card className="transition-all hover:shadow-md overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Daily Production</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[100px]">
+            <div className="h-[120px]">
               {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
+                  <LineChart data={chartData} margin={{ top: 5, right: 10, left: 5, bottom: 5 }}>
                     <Line
                       type="monotone"
                       dataKey="production"
@@ -665,15 +701,15 @@ export default function DashboardPage() {
         </Card>
 
         {/* Daily Disposal Trend */}
-        <Card className="transition-all hover:shadow-md">
+        <Card className="transition-all hover:shadow-md overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Daily Disposal</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[100px]">
+            <div className="h-[120px]">
               {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
+                  <LineChart data={chartData} margin={{ top: 5, right: 10, left: 5, bottom: 5 }}>
                     <Line
                       type="monotone"
                       dataKey="disposal"
@@ -693,15 +729,15 @@ export default function DashboardPage() {
         </Card>
 
         {/* Efficiency Trend */}
-        <Card className="transition-all hover:shadow-md">
+        <Card className="transition-all hover:shadow-md overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Efficiency Trend</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[100px]">
+            <div className="h-[120px]">
               {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chartData}>
+                  <LineChart data={chartData} margin={{ top: 5, right: 10, left: 5, bottom: 5 }}>
                     <Line
                       type="monotone"
                       dataKey="efficiency"
@@ -721,15 +757,15 @@ export default function DashboardPage() {
         </Card>
 
         {/* Top Category Distribution */}
-        <Card className="transition-all hover:shadow-md">
+        <Card className="transition-all hover:shadow-md overflow-hidden">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Category Distribution</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[100px]">
+            <div className="h-[120px]">
               {productStats.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
+                  <PieChart margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
                     <Pie
                       data={(() => {
                         const categoryData = products.reduce((acc, product) => {
@@ -748,9 +784,10 @@ export default function DashboardPage() {
                       cx="50%"
                       cy="50%"
                       innerRadius={20}
-                      outerRadius={40}
+                      outerRadius={45}
                       paddingAngle={2}
                       dataKey="value"
+                      label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
                     >
                       {products.map((_, index) => (
                         <Cell 
@@ -759,6 +796,25 @@ export default function DashboardPage() {
                         />
                       ))}
                     </Pie>
+                    <Tooltip 
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-background border border-border rounded-md shadow-md p-2 backdrop-blur-sm">
+                              <p className="text-xs font-semibold">{payload[0].name}</p>
+                              <p className="text-xs">Value: {payload[0].value}</p>
+                            </div>
+                          )
+                        }
+                        return null
+                      }}
+                    />
+                    <Legend 
+                      layout="horizontal" 
+                      verticalAlign="bottom" 
+                      align="center"
+                      wrapperStyle={{ fontSize: '10px' }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
@@ -773,37 +829,37 @@ export default function DashboardPage() {
       
       {/* Main Dashboard */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-[400px]">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="performance">Performance</TabsTrigger>
-          <TabsTrigger value="insights">AI Insights</TabsTrigger>
-          <TabsTrigger value="entries">Entries</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 md:w-[500px] lg:w-[600px]">
+          <TabsTrigger value="overview" className="text-xs sm:text-sm">Overview</TabsTrigger>
+          <TabsTrigger value="performance" className="text-xs sm:text-sm">Performance</TabsTrigger>
+          <TabsTrigger value="insights" className="text-xs sm:text-sm">AI Insights</TabsTrigger>
+          <TabsTrigger value="entries" className="text-xs sm:text-sm">Entries</TabsTrigger>
         </TabsList>
         
         <TabsContent value="overview" className="space-y-6">
           {/* Time Series Chart */}
-          <Card className="transition-all hover:shadow-md">
+          <Card className="transition-all hover:shadow-md overflow-hidden">
             <CardHeader>
               <CardTitle>Production & Disposal Trends</CardTitle>
               <CardDescription>
                 Compare production and disposal volumes over time
               </CardDescription>
             </CardHeader>
-            <CardContent className="h-[400px]">
+            <CardContent className="h-[450px]">
               {chartData.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   {chartType === "bar" ? (
-                    <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                      <XAxis dataKey="formattedDate" />
-                      <YAxis />
+                      <XAxis dataKey="formattedDate" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
                       <Tooltip content={<CustomTooltip />} />
-                      <Legend />
+                      <Legend wrapperStyle={{ fontSize: '11px' }} />
                       <Bar dataKey="production" fill={CHART_COLORS.production} name="Production" />
                       <Bar dataKey="disposal" fill={CHART_COLORS.disposal} name="Disposal" />
                     </BarChart>
                   ) : chartType === "area" ? (
-                    <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                       <defs>
                         <linearGradient id="colorProduction" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor={CHART_COLORS.production} stopOpacity={0.8}/>
@@ -815,10 +871,10 @@ export default function DashboardPage() {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                      <XAxis dataKey="formattedDate" />
-                      <YAxis />
+                      <XAxis dataKey="formattedDate" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
                       <Tooltip content={<CustomTooltip />} />
-                      <Legend />
+                      <Legend wrapperStyle={{ fontSize: '11px' }} />
                       <Area 
                         type="monotone" 
                         dataKey="production" 
@@ -835,19 +891,19 @@ export default function DashboardPage() {
                       />
                     </AreaChart>
                   ) : (
-                    <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                      <XAxis dataKey="formattedDate" />
-                      <YAxis />
+                      <XAxis dataKey="formattedDate" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} />
                       <Tooltip content={<CustomTooltip />} />
-                      <Legend />
+                      <Legend wrapperStyle={{ fontSize: '11px' }} />
                       <Line 
                         type="monotone" 
                         dataKey="production" 
                         stroke={CHART_COLORS.production} 
                         strokeWidth={2}
-                        dot={{ r: 4 }}
-                        activeDot={{ r: 6 }}
+                        dot={{ r: 3 }}
+                        activeDot={{ r: 5 }}
                         name="Production" 
                       />
                       <Line 
@@ -855,8 +911,8 @@ export default function DashboardPage() {
                         dataKey="disposal" 
                         stroke={CHART_COLORS.disposal} 
                         strokeWidth={2}
-                        dot={{ r: 4 }}
-                        activeDot={{ r: 6 }}
+                        dot={{ r: 3 }}
+                        activeDot={{ r: 5 }}
                         name="Disposal" 
                       />
                     </LineChart>
@@ -872,7 +928,7 @@ export default function DashboardPage() {
           
           <div className="grid gap-6 md:grid-cols-2">
             {/* Production Efficiency Trend */}
-            <Card className="transition-all hover:shadow-md">
+            <Card className="transition-all hover:shadow-md overflow-hidden">
               <CardHeader>
                 <CardTitle>Production Efficiency Trend</CardTitle>
                 <CardDescription>Daily efficiency rates over time</CardDescription>
@@ -880,7 +936,7 @@ export default function DashboardPage() {
               <CardContent className="h-[300px]">
                 {chartData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
                       <defs>
                         <linearGradient id="colorEfficiency" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="5%" stopColor={CHART_COLORS.efficiency} stopOpacity={0.8}/>
@@ -888,8 +944,8 @@ export default function DashboardPage() {
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-                      <XAxis dataKey="formattedDate" />
-                      <YAxis domain={[0, 100]} />
+                      <XAxis dataKey="formattedDate" tick={{ fontSize: 11 }} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
                       <Tooltip content={<CustomTooltip />} />
                       <Area
                         type="monotone"
@@ -909,7 +965,7 @@ export default function DashboardPage() {
             </Card>
 
             {/* Waste Distribution */}
-            <Card className="transition-all hover:shadow-md">
+            <Card className="transition-all hover:shadow-md overflow-hidden">
               <CardHeader>
                 <CardTitle>Waste Distribution</CardTitle>
                 <CardDescription>Breakdown of disposal reasons</CardDescription>
@@ -917,16 +973,45 @@ export default function DashboardPage() {
               <CardContent className="h-[300px]">
                 {reasonStats.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
+                    <BarChart 
                         data={reasonStats}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={100}
-                        fill="#8884d8"
+                      layout="vertical"
+                      margin={{ top: 10, right: 30, left: 100, bottom: 10 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                      <XAxis type="number" />
+                      <YAxis 
+                        type="category" 
+                        dataKey="name" 
+                        width={100}
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value) => value.length > 15 ? `${value.substring(0, 15)}...` : value}
+                      />
+                      <Tooltip 
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const value = Number(payload[0].value) || 0;
+                            const total = reasonStats.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+                            const percentage = total > 0 ? (value / total) * 100 : 0;
+                            
+                            return (
+                              <div className="bg-background border border-border rounded-md shadow-md p-3 backdrop-blur-sm">
+                                <p className="text-sm font-semibold">{payload[0].name}</p>
+                                <p className="text-sm">Quantity: {value}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {percentage.toFixed(1)}% of total
+                                </p>
+                              </div>
+                            )
+                          }
+                          return null
+                        }}
+                      />
+                      <Bar 
                         dataKey="value"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        fill={CHART_COLORS.disposal}
+                        name="Quantity"
+                        radius={[0, 4, 4, 0]}
                       >
                         {reasonStats.map((entry, index) => (
                           <Cell 
@@ -934,9 +1019,8 @@ export default function DashboardPage() {
                             fill={`hsl(${index * 40}, 70%, 50%)`} 
                           />
                         ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => value} />
-                    </PieChart>
+                      </Bar>
+                    </BarChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="flex h-full items-center justify-center">
@@ -956,38 +1040,40 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 {productStats.length > 0 ? (
-                  <Table className="overflow-auto">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Product</TableHead>
-                        <TableHead className="text-right">Production</TableHead>
-                        <TableHead className="text-right">Disposal</TableHead>
-                        <TableHead className="text-right">Rate</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {productStats.slice(0, 5).map((product) => (
-                        <TableRow key={product.name}>
-                          <TableCell className="font-medium">{product.name}</TableCell>
-                          <TableCell className="text-right">{product.production}</TableCell>
-                          <TableCell className="text-right">{product.disposal}</TableCell>
-                          <TableCell className="text-right">
-                            <Badge 
-                              variant={
-                                product.disposalRate > 15 
-                                  ? "destructive" 
-                                  : product.disposalRate > 10 
-                                    ? "secondary" 
-                                    : "default"
-                              }
-                            >
-                              {product.disposalRate}%
-                            </Badge>
-                          </TableCell>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Product</TableHead>
+                          <TableHead className="text-right">Production</TableHead>
+                          <TableHead className="text-right">Disposal</TableHead>
+                          <TableHead className="text-right">Rate</TableHead>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                      </TableHeader>
+                    <TableBody>
+                        {productStats.slice(0, 5).map((product) => (
+                          <TableRow key={product.name}>
+                            <TableCell className="font-medium">{product.name}</TableCell>
+                            <TableCell className="text-right">{product.production}</TableCell>
+                            <TableCell className="text-right">{product.disposal}</TableCell>
+                            <TableCell className="text-right">
+                              <Badge 
+                                variant={
+                                  product.disposalRate > 15 
+                                    ? "destructive" 
+                                    : product.disposalRate > 10 
+                                      ? "secondary" 
+                                      : "default"
+                                }
+                              >
+                                {product.disposalRate}%
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
                 ) : (
                   <div className="flex h-[200px] items-center justify-center">
                     <p className="text-muted-foreground">No product data available</p>
@@ -1192,16 +1278,45 @@ export default function DashboardPage() {
               <CardContent className="h-[300px]">
                 {reasonStats.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
+                    <BarChart 
                         data={reasonStats}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={100}
-                        fill="#8884d8"
+                      layout="vertical"
+                      margin={{ top: 10, right: 30, left: 100, bottom: 10 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                      <XAxis type="number" />
+                      <YAxis 
+                        type="category" 
+                        dataKey="name" 
+                        width={100}
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value) => value.length > 15 ? `${value.substring(0, 15)}...` : value}
+                      />
+                      <Tooltip 
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const value = Number(payload[0].value) || 0;
+                            const total = reasonStats.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
+                            const percentage = total > 0 ? (value / total) * 100 : 0;
+                            
+                            return (
+                              <div className="bg-background border border-border rounded-md shadow-md p-3 backdrop-blur-sm">
+                                <p className="text-sm font-semibold">{payload[0].name}</p>
+                                <p className="text-sm">Quantity: {value}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {percentage.toFixed(1)}% of total
+                                </p>
+                              </div>
+                            )
+                          }
+                          return null
+                        }}
+                      />
+                      <Bar 
                         dataKey="value"
-                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        fill={CHART_COLORS.disposal}
+                        name="Quantity"
+                        radius={[0, 4, 4, 0]}
                       >
                         {reasonStats.map((entry, index) => (
                             <Cell 
@@ -1209,9 +1324,8 @@ export default function DashboardPage() {
                               fill={`hsl(${index * 40}, 70%, 50%)`} 
                             />
                         ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => value} />
-                    </PieChart>
+                      </Bar>
+                    </BarChart>
                   </ResponsiveContainer>
                 ) : (
                   <div className="flex h-full items-center justify-center">
@@ -1291,88 +1405,108 @@ export default function DashboardPage() {
             
           <div className="grid gap-6 md:grid-cols-2">
               {/* Production by Shift */}
-            <Card className="transition-all hover:shadow-md">
+            <Card>
               <CardHeader>
                   <CardTitle>Production by Shift</CardTitle>
-                  <CardDescription>Production volume distribution across shifts</CardDescription>
               </CardHeader>
-                <CardContent className="h-[300px]">
-                  {filteredProductionEntries.length > 0 ? (
+              <CardContent>
+                <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                        data={(() => {
-                          const shiftData = filteredProductionEntries.reduce((acc, entry) => {
-                            const shift = entry.shift || 'Unknown'
-                            acc[shift] = (acc[shift] || 0) + entry.quantity
-                            return acc
-                          }, {} as Record<string, number>)
-                          
-                          return Object.entries(shiftData)
-                            .map(([shift, value]) => ({ shift, value }))
-                            .sort((a, b) => a.shift.localeCompare(b.shift))
-                        })()}
-                        margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                        <XAxis dataKey="shift" />
-                        <YAxis />
-                      <Tooltip content={<CustomTooltip />} />
-                        <Bar 
+                    <PieChart>
+                      <Pie
+                        data={productionShiftChartData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                        outerRadius={80}
+                        fill="#8884d8"
                           dataKey="value" 
-                          fill={CHART_COLORS.production}
-                          name="Production"
-                          radius={[4, 4, 0, 0]}
-                        />
-                    </BarChart>
+                        innerRadius={40}
+                        paddingAngle={2}
+                      >
+                        {productionShiftChartData.map((entry: { name: string; value: number }, index: number) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={index === 0 ? CHART_COLORS.production : CHART_COLORS.rate} 
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="bg-background border border-border rounded-md shadow-md p-3 backdrop-blur-sm">
+                                <p className="text-sm font-semibold">{payload[0].name}</p>
+                                <p className="text-sm">Production: {payload[0].value}</p>
+                              </div>
+                            )
+                          }
+                          return null
+                        }}
+                      />
+                      <Legend 
+                        layout="horizontal" 
+                        verticalAlign="bottom" 
+                        align="center"
+                        wrapperStyle={{ fontSize: '12px' }}
+                      />
+                    </PieChart>
                   </ResponsiveContainer>
-                ) : (
-                  <div className="flex h-full items-center justify-center">
-                      <p className="text-muted-foreground">No production data available</p>
                   </div>
-                )}
               </CardContent>
             </Card>
             
               {/* Disposal by Shift */}
-            <Card className="transition-all hover:shadow-md">
+            <Card>
               <CardHeader>
                   <CardTitle>Disposal by Shift</CardTitle>
-                  <CardDescription>Disposal volume distribution across shifts</CardDescription>
               </CardHeader>
-                <CardContent className="h-[300px]">
-                  {filteredDisposalEntries.length > 0 ? (
+              <CardContent>
+                <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                      <BarChart
-                        data={(() => {
-                          const shiftData = filteredDisposalEntries.reduce((acc, entry) => {
-                            const shift = entry.shift || 'Unknown'
-                            acc[shift] = (acc[shift] || 0) + entry.quantity
-                            return acc
-                          }, {} as Record<string, number>)
-                          
-                          return Object.entries(shiftData)
-                            .map(([shift, value]) => ({ shift, value }))
-                            .sort((a, b) => a.shift.localeCompare(b.shift))
-                        })()}
-                        margin={{ top: 20, right: 20, left: 20, bottom: 20 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
-                        <XAxis dataKey="shift" />
-                        <YAxis />
-                      <Tooltip content={<CustomTooltip />} />
-                        <Bar 
+                    <PieChart>
+                      <Pie
+                        data={disposalShiftChartData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                        outerRadius={80}
+                        fill="#8884d8"
                           dataKey="value" 
-                          fill={CHART_COLORS.disposal}
-                          name="Disposal"
-                          radius={[4, 4, 0, 0]}
-                        />
-                      </BarChart>
+                        innerRadius={40}
+                        paddingAngle={2}
+                      >
+                        {disposalShiftChartData.map((entry: { name: string; value: number }, index: number) => (
+                          <Cell 
+                            key={`cell-${index}`} 
+                            fill={index === 0 ? CHART_COLORS.disposal : CHART_COLORS.rate} 
+                          />
+                        ))}
+                      </Pie>
+                      <Tooltip 
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            return (
+                              <div className="bg-background border border-border rounded-md shadow-md p-3 backdrop-blur-sm">
+                                <p className="text-sm font-semibold">{payload[0].name}</p>
+                                <p className="text-sm">Disposal: {payload[0].value}</p>
+                              </div>
+                            )
+                          }
+                          return null
+                        }}
+                      />
+                      <Legend 
+                        layout="horizontal" 
+                        verticalAlign="bottom" 
+                        align="center"
+                        wrapperStyle={{ fontSize: '12px' }}
+                      />
+                    </PieChart>
                   </ResponsiveContainer>
-                ) : (
-                  <div className="flex h-full items-center justify-center">
-                      <p className="text-muted-foreground">No disposal data available</p>
                     </div>
-                  )}
                 </CardContent>
               </Card>
             </div>
@@ -1459,4 +1593,4 @@ export default function DashboardPage() {
       <CopyrightFooter />
     </div>
   )
-} 
+}

@@ -13,11 +13,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 interface DatePickerWithRangeProps {
   date: DateRange
-  setDate: (date: DateRange) => void
+  onDateChange: (date: DateRange) => void
   className?: string
 }
 
-export function DatePickerWithRange({ date, setDate, className }: DatePickerWithRangeProps) {
+export function DatePickerWithRange({ date, onDateChange, className }: DatePickerWithRangeProps) {
   const [isOpen, setIsOpen] = useState(false)
 
   // Predefined date ranges
@@ -28,25 +28,25 @@ export function DatePickerWithRange({ date, setDate, className }: DatePickerWith
       case "last7days":
         const last7Days = new Date()
         last7Days.setDate(today.getDate() - 7)
-        setDate({ from: last7Days, to: today })
+        onDateChange({ from: last7Days, to: today })
         break
       case "last30days":
         const last30Days = new Date()
         last30Days.setDate(today.getDate() - 30)
-        setDate({ from: last30Days, to: today })
+        onDateChange({ from: last30Days, to: today })
         break
       case "thisMonth":
         const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-        setDate({ from: firstDayOfMonth, to: today })
+        onDateChange({ from: firstDayOfMonth, to: today })
         break
       case "lastMonth":
         const firstDayOfLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1)
         const lastDayOfLastMonth = new Date(today.getFullYear(), today.getMonth(), 0)
-        setDate({ from: firstDayOfLastMonth, to: lastDayOfLastMonth })
+        onDateChange({ from: firstDayOfLastMonth, to: lastDayOfLastMonth })
         break
       case "thisYear":
         const firstDayOfYear = new Date(today.getFullYear(), 0, 1)
-        setDate({ from: firstDayOfYear, to: today })
+        onDateChange({ from: firstDayOfYear, to: today })
         break
     }
 
@@ -97,32 +97,9 @@ export function DatePickerWithRange({ date, setDate, className }: DatePickerWith
               mode="range"
               defaultMonth={date?.from}
               selected={date}
-              onSelect={setDate}
+              onSelect={onDateChange}
               numberOfMonths={2}
               required
-              className="rounded-md border shadow-sm"
-              classNames={{
-                months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
-                month: "space-y-4",
-                caption: "flex justify-center pt-1 relative items-center",
-                caption_label: "text-sm font-medium",
-                nav: "space-x-1 flex items-center",
-                nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
-                nav_button_previous: "absolute left-1",
-                nav_button_next: "absolute right-1",
-                table: "w-full border-collapse space-y-1",
-                head_row: "flex",
-                head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem]",
-                row: "flex w-full mt-2",
-                cell: "text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent first:[&:has([aria-selected])]:rounded-l-md last:[&:has([aria-selected])]:rounded-r-md focus-within:relative focus-within:z-20",
-                day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100",
-                day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-                day_today: "bg-accent text-accent-foreground",
-                day_outside: "text-muted-foreground opacity-50",
-                day_disabled: "text-muted-foreground opacity-50",
-                day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
-                day_hidden: "invisible",
-              }}
             />
           </PopoverContent>
         </Popover>

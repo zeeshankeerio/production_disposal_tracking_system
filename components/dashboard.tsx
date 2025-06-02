@@ -358,7 +358,7 @@ export function Dashboard() {
   // If we get here, we're ready to render the dashboard content
   return <DashboardContent 
     dateRange={dateRange} 
-    setDateRange={handleDateRangeChange}
+    onDateChange={handleDateRangeChange}
     productionEntries={filteredProduction}
     disposalEntries={filteredDisposal}
     products={products}
@@ -374,7 +374,7 @@ export function Dashboard() {
 // Separate component to render the dashboard content
 function DashboardContent({
   dateRange,
-  setDateRange,
+  onDateChange,
   productionEntries,
   disposalEntries,
   products,
@@ -386,7 +386,7 @@ function DashboardContent({
   timeSeriesData,
 }: {
   dateRange: DateRange;
-  setDateRange: (range: DateRange) => void;
+  onDateChange: (range: DateRange) => void;
   productionEntries: any[];
   disposalEntries: any[];
   products: any[];
@@ -398,87 +398,82 @@ function DashboardContent({
   timeSeriesData: any[];
 }) {
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-        <DatePickerWithRange date={dateRange} setDate={setDateRange} />
-      </div>
-
+    <div className="space-y-8">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="transition-all hover:shadow-md">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Production</CardTitle>
             <BarChart3 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatNumber(metrics.totalProduction)}</div>
-            <div className="flex items-center mt-1">
+            <p className="text-xs text-muted-foreground">
               {metrics.productionTrend > 0 ? (
-                <>
-                  <TrendingUp className="mr-1 h-4 w-4 text-green-600" />
-                  <span className="text-xs text-green-600">
-                    +{metrics.productionTrend.toFixed(1)}% from previous period
-                  </span>
-                </>
-              ) : metrics.productionTrend < 0 ? (
-                <>
-                  <TrendingDown className="mr-1 h-4 w-4 text-red-600" />
-                  <span className="text-xs text-red-600">
-                    {metrics.productionTrend.toFixed(1)}% from previous period
-                  </span>
-                </>
+                <span className="flex items-center text-green-500">
+                  <ArrowUp className="mr-1 h-3 w-3" />
+                  {metrics.productionTrend.toFixed(1)}% from last week
+                </span>
               ) : (
-                <span className="text-xs text-muted-foreground">No change from previous period</span>
+                <span className="flex items-center text-red-500">
+                  <ArrowDown className="mr-1 h-3 w-3" />
+                  {Math.abs(metrics.productionTrend).toFixed(1)}% from last week
+                </span>
               )}
-            </div>
+            </p>
           </CardContent>
         </Card>
-        <Card className="transition-all hover:shadow-md">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Disposal</CardTitle>
-            <PieChartIcon className="h-4 w-4 text-muted-foreground" />
+            <TrendingDown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{formatNumber(metrics.totalDisposal)}</div>
-            <div className="flex items-center mt-1">
+            <p className="text-xs text-muted-foreground">
               {metrics.disposalTrend > 0 ? (
-                <>
-                  <TrendingUp className="mr-1 h-4 w-4 text-red-600" />
-                  <span className="text-xs text-red-600">
-                    +{metrics.disposalTrend.toFixed(1)}% from previous period
-                  </span>
-                </>
-              ) : metrics.disposalTrend < 0 ? (
-                <>
-                  <TrendingDown className="mr-1 h-4 w-4 text-green-600" />
-                  <span className="text-xs text-green-600">
-                    {Math.abs(metrics.disposalTrend).toFixed(1)}% from previous period
-                  </span>
-                </>
+                <span className="flex items-center text-red-500">
+                  <ArrowUp className="mr-1 h-3 w-3" />
+                  {metrics.disposalTrend.toFixed(1)}% from last week
+                </span>
               ) : (
-                <span className="text-xs text-muted-foreground">No change from previous period</span>
+                <span className="flex items-center text-green-500">
+                  <ArrowDown className="mr-1 h-3 w-3" />
+                  {Math.abs(metrics.disposalTrend).toFixed(1)}% from last week
+                </span>
               )}
-            </div>
+            </p>
           </CardContent>
         </Card>
-        <Card className="transition-all hover:shadow-md">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Disposal Rate</CardTitle>
-            <ArrowDown className="h-4 w-4 text-muted-foreground" />
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{metrics.disposalRate.toFixed(1)}%</div>
-            <p className="text-xs text-muted-foreground">Percentage of production that was disposed</p>
+            <p className="text-xs text-muted-foreground">
+              {metrics.disposalRate > 10 ? (
+                <span className="text-red-500">High disposal rate</span>
+              ) : (
+                <span className="text-green-500">Normal disposal rate</span>
+              )}
+            </p>
           </CardContent>
         </Card>
-        <Card className="transition-all hover:shadow-md">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Products</CardTitle>
-            <ArrowUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Active Products</CardTitle>
+            <PieChartIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{products.length}</div>
-            <p className="text-xs text-muted-foreground">Total number of products tracked</p>
+            <p className="text-xs text-muted-foreground">
+              {products.length > 0 ? (
+                <span className="text-green-500">Products configured</span>
+              ) : (
+                <span className="text-red-500">No products configured</span>
+              )}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -490,193 +485,104 @@ function DashboardContent({
           <TabsTrigger value="disposal">Disposal</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Card className="col-span-2 transition-all hover:shadow-md">
-              <CardHeader>
-                <CardTitle>Production vs Disposal Over Time</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                {timeSeriesData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={timeSeriesData}
-                      margin={{
-                        top: 5,
-                        right: 30,
-                        left: 20,
-                        bottom: 5,
-                      }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" stroke="#ccc" opacity={0.5} />
-                      <XAxis dataKey="date" tick={{ fontSize: 12 }} tickFormatter={(value) => value} />
-                      <YAxis tick={{ fontSize: 12 }} />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend />
-                      <Line
-                        type="monotone"
-                        dataKey="production"
-                        name="Production"
-                        stroke="#0088FE"
-                        strokeWidth={2}
-                        dot={{ r: 3 }}
-                        activeDot={{ r: 5 }}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="disposal"
-                        name="Disposal"
-                        stroke="#FF8042"
-                        strokeWidth={2}
-                        dot={{ r: 3 }}
-                        activeDot={{ r: 5 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex h-full items-center justify-center">
-                    <p className="text-muted-foreground">No data available for the selected period</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            <Card className="transition-all hover:shadow-md">
-              <CardHeader>
-                <CardTitle>Shift Comparison</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[300px]">
-                {productionByShiftChart.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={productionByShiftChart}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        label={renderCustomizedLabel}
-                      >
-                        {productionByShiftChart.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(value) => formatNumber(value as number)} />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex h-full items-center justify-center">
-                    <p className="text-muted-foreground">No data available for the selected period</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
           <div className="grid gap-4 md:grid-cols-2">
-            <Card className="transition-all hover:shadow-md">
-              <CardHeader>
-                <CardTitle>Recent Production</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {productionEntries.slice(0, 5).map((entry) => (
-                    <div key={entry.id} className="flex items-center">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium leading-none">{entry.product_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatDate(entry.date)} - {entry.staff_name}
-                        </p>
-                      </div>
-                      <div className="ml-auto font-medium">
-                        {formatNumber(entry.quantity)} units
-                        <Badge variant="outline" className="ml-2">
-                          {entry.shift === "day" ? "Day" : "Night"}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                  {productionEntries.length === 0 && (
-                    <p className="text-muted-foreground">No production entries for the selected period</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="transition-all hover:shadow-md">
-              <CardHeader>
-                <CardTitle>Recent Disposal</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {disposalEntries.slice(0, 5).map((entry) => (
-                    <div key={entry.id} className="flex items-center">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium leading-none">{entry.product_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatDate(entry.date)} - {entry.reason.split("/")[0]}
-                        </p>
-                      </div>
-                      <div className="ml-auto font-medium">
-                        {formatNumber(entry.quantity)} units
-                        <Badge variant="outline" className="ml-2">
-                          {entry.shift === "day" ? "Day" : "Night"}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                  {disposalEntries.length === 0 && (
-                    <p className="text-muted-foreground">No disposal entries for the selected period</p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-        <TabsContent value="production" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Card className="transition-all hover:shadow-md">
+            <Card>
               <CardHeader>
                 <CardTitle>Production by Product</CardTitle>
               </CardHeader>
-              <CardContent className="h-[400px]">
-                {productionByProductChart.length > 0 ? (
+              <CardContent>
+                <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={productionByProductChart}
-                      layout="vertical"
-                      margin={{
-                        top: 5,
-                        right: 30,
-                        left: 100,
-                        bottom: 5,
-                      }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" />
-                      <YAxis
-                        type="category"
-                        dataKey="name"
-                        width={100}
-                        tick={{ fontSize: 12 }}
-                        tickFormatter={(value) => (value.length > 15 ? `${value.substring(0, 15)}...` : value)}
-                      />
+                    <PieChart>
+                      <Pie
+                        data={productionByProductChart}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={renderCustomizedLabel}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {productionByProductChart.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
                       <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="value" fill="#0088FE" name="Quantity" />
-                    </BarChart>
+                      <Legend />
+                    </PieChart>
                   </ResponsiveContainer>
-                ) : (
-                  <div className="flex h-full items-center justify-center">
-                    <p className="text-muted-foreground">No data available for the selected period</p>
-                  </div>
-                )}
+                </div>
               </CardContent>
             </Card>
-            <Card className="transition-all hover:shadow-md">
+            <Card>
+              <CardHeader>
+                <CardTitle>Waste Distribution</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart 
+                      data={disposalByReasonChart}
+                      layout="vertical"
+                      margin={{ top: 5, right: 30, left: 100, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                      <XAxis type="number" />
+                      <YAxis 
+                        type="category" 
+                        dataKey="name" 
+                        width={100}
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(value) => value.length > 15 ? `${value.substring(0, 15)}...` : value}
+                      />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                      <Bar 
+                        dataKey="value" 
+                        fill="#FF8042" 
+                        name="Quantity"
+                        radius={[0, 4, 4, 0]}
+                      >
+                        {disposalByReasonChart.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Production and Disposal Over Time</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={timeSeriesData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend />
+                    <Line type="monotone" dataKey="production" stroke="#0088FE" name="Production" />
+                    <Line type="monotone" dataKey="disposal" stroke="#FF8042" name="Disposal" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="production" className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card>
               <CardHeader>
                 <CardTitle>Production by Shift</CardTitle>
               </CardHeader>
-              <CardContent className="h-[400px]">
-                {productionByShiftChart.length > 0 ? (
+              <CardContent>
+                <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -684,73 +590,51 @@ function DashboardContent({
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        outerRadius={120}
+                        label={renderCustomizedLabel}
+                        outerRadius={80}
                         fill="#8884d8"
                         dataKey="value"
-                        label={renderCustomizedLabel}
                       >
                         {productionByShiftChart.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => formatNumber(value as number)} />
+                      <Tooltip content={<CustomTooltip />} />
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
-                ) : (
-                  <div className="flex h-full items-center justify-center">
-                    <p className="text-muted-foreground">No data available for the selected period</p>
-                  </div>
-                )}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Production by Product</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={productionByProductChart}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                      <Bar dataKey="value" fill="#0088FE" name="Production" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           </div>
         </TabsContent>
         <TabsContent value="disposal" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
-            <Card className="transition-all hover:shadow-md">
-              <CardHeader>
-                <CardTitle>Disposal by Reason</CardTitle>
-              </CardHeader>
-              <CardContent className="h-[400px]">
-                {disposalByReasonChart.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={disposalByReasonChart}
-                      layout="vertical"
-                      margin={{
-                        top: 5,
-                        right: 30,
-                        left: 100,
-                        bottom: 5,
-                      }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" />
-                      <YAxis
-                        type="category"
-                        dataKey="name"
-                        width={100}
-                        tick={{ fontSize: 12 }}
-                        tickFormatter={(value) => (value.length > 15 ? `${value.substring(0, 15)}...` : value)}
-                      />
-                      <Tooltip content={<CustomTooltip />} />
-                      <Bar dataKey="value" fill="#FF8042" name="Quantity" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="flex h-full items-center justify-center">
-                    <p className="text-muted-foreground">No data available for the selected period</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            <Card className="transition-all hover:shadow-md">
+            <Card>
               <CardHeader>
                 <CardTitle>Disposal by Shift</CardTitle>
               </CardHeader>
-              <CardContent className="h-[400px]">
-                {disposalByShiftChart.length > 0 ? (
+              <CardContent>
+                <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -758,24 +642,39 @@ function DashboardContent({
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        outerRadius={120}
+                        label={renderCustomizedLabel}
+                        outerRadius={80}
                         fill="#8884d8"
                         dataKey="value"
-                        label={renderCustomizedLabel}
                       >
                         {disposalByShiftChart.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => formatNumber(value as number)} />
+                      <Tooltip content={<CustomTooltip />} />
                       <Legend />
                     </PieChart>
                   </ResponsiveContainer>
-                ) : (
-                  <div className="flex h-full items-center justify-center">
-                    <p className="text-muted-foreground">No data available for the selected period</p>
-                  </div>
-                )}
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Disposal by Reason</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={disposalByReasonChart}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="name" />
+                      <YAxis />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Legend />
+                      <Bar dataKey="value" fill="#FF8042" name="Disposal" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </CardContent>
             </Card>
           </div>

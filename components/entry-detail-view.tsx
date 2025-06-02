@@ -50,16 +50,31 @@ export function EntryDetailView({ entry, type }: EntryDetailViewProps) {
     const rawDate = entry.date;
     
     // 2. Define a safe/fallback default
-    const safeDate = (rawDate !== undefined && rawDate !== null)
-      ? new Date(rawDate)
-      : new Date(); // Default to current date
+    let formattedDate = "No date";
     
-    // 3. Format the date safely
-    const formattedDate = safeDate.toLocaleString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+    try {
+      if (rawDate === undefined || rawDate === null) {
+        formattedDate = "No date";
+      } else {
+        const safeDate = rawDate instanceof Date ? rawDate : new Date(rawDate);
+        
+        // Check if date is valid
+        if (!(safeDate instanceof Date) || isNaN(safeDate.getTime())) {
+          console.warn("Invalid date in entry:", entry.id, rawDate);
+          formattedDate = "Invalid date";
+        } else {
+          // 3. Format the date safely
+          formattedDate = safeDate.toLocaleString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error formatting date:", error, "Entry:", entry.id);
+      formattedDate = "Invalid date";
+    }
     
     text += `Date: ${formattedDate}\n`
     text += `Shift: ${entry.shift === "morning" ? "Morning" : entry.shift === "afternoon" ? "Afternoon" : "Night"}\n`
@@ -233,4 +248,4 @@ export function EntryDetailView({ entry, type }: EntryDetailViewProps) {
       </CardFooter>
     </Card>
   )
-} 
+}

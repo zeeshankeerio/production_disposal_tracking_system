@@ -68,6 +68,34 @@ export async function POST(request: Request) {
       } as ApiResponse<DisposalEntry>, { status: 400 })
     }
     
+    // Validate dates
+    const disposalDate = new Date(entry.date)
+    if (isNaN(disposalDate.getTime())) {
+      return NextResponse.json({
+        success: false,
+        error: "Invalid disposal date format",
+        statusCode: 400
+      } as ApiResponse<DisposalEntry>, { status: 400 })
+    }
+    
+    // Validate quantity
+    if (typeof entry.quantity !== 'number' || entry.quantity <= 0) {
+      return NextResponse.json({
+        success: false,
+        error: "Invalid quantity value",
+        statusCode: 400
+      } as ApiResponse<DisposalEntry>, { status: 400 })
+    }
+    
+    // Validate reason
+    if (!entry.reason || typeof entry.reason !== 'string' || entry.reason.trim().length === 0) {
+      return NextResponse.json({
+        success: false,
+        error: "Disposal reason is required",
+        statusCode: 400
+      } as ApiResponse<DisposalEntry>, { status: 400 })
+    }
+    
     // Ensure the product exists
     const product = await db.getProduct(entry.product_id)
     if (!product) {

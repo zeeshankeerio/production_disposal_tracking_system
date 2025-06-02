@@ -217,16 +217,16 @@ export function DashboardStats({ productionEntries, disposalEntries, dateFrom, d
       <Tabs 
         value={timeRange} 
         onValueChange={(v) => setTimeRange(v as "today" | "week" | "month")}
-        className="w-[400px]"
+        className="w-full sm:max-w-[400px]"
       >
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="today">Today</TabsTrigger>
-          <TabsTrigger value="week">This Week</TabsTrigger>
-          <TabsTrigger value="month">This Month</TabsTrigger>
+          <TabsTrigger value="today" className="text-xs sm:text-sm">Today</TabsTrigger>
+          <TabsTrigger value="week" className="text-xs sm:text-sm">This Week</TabsTrigger>
+          <TabsTrigger value="month" className="text-xs sm:text-sm">This Month</TabsTrigger>
         </TabsList>
       </Tabs>
       
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         {/* Production Card */}
         <Card className={`bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/50 ${animationClasses}`}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -309,15 +309,15 @@ export function DashboardStats({ productionEntries, disposalEntries, dateFrom, d
       </div>
       
       {/* Daily Insights */}
-      <Card className="mt-6 dark:border-border/50">
+      <Card className="mt-6 dark:border-border/50 overflow-hidden">
         <CardHeader>
           <CardTitle>Daily Performance</CardTitle>
           <CardDescription>
             Efficiency trends across recent days
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-7 gap-2">
+        <CardContent className="overflow-x-auto pb-2">
+          <div className="grid grid-cols-7 gap-2 min-w-[500px]">
             {dailyTrends.map((day, i) => (
               <div key={i} className="flex flex-col items-center text-center">
                 <span className="text-xs text-muted-foreground">{day.date}</span>
@@ -339,7 +339,7 @@ export function DashboardStats({ productionEntries, disposalEntries, dateFrom, d
           </div>
         </CardContent>
         <CardFooter>
-          <div className="flex items-center justify-center w-full space-x-2 text-xs text-muted-foreground">
+          <div className="flex items-center justify-center w-full gap-3 text-xs text-muted-foreground flex-wrap">
             <div className="flex items-center">
               <div className="h-2 w-2 rounded-full bg-green-500 mr-1"></div>
               <span>Good (&lt;10%)</span>
@@ -357,4 +357,4 @@ export function DashboardStats({ productionEntries, disposalEntries, dateFrom, d
       </Card>
     </div>
   )
-} 
+}

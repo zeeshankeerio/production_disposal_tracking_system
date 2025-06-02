@@ -37,34 +37,45 @@ export function formatDateForDisplay(
   date: Date | string | null | undefined,
   format: "short" | "medium" | "long" = "medium"
 ): string {
-  if (!date) return "N/A";
+  if (date === undefined || date === null) return "N/A";
   
-  // Convert string to Date if needed
-  const dateObj = typeof date === "string" ? new Date(date) : date;
-  
-  // Check if valid date
-  if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
-    return "Invalid Date";
-  }
+  try {
+    // Convert string to Date if needed
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+    
+    // Check if valid date
+    if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
+      console.warn("Invalid date in formatDateForDisplay:", date);
+      return "Invalid Date";
+    }
   
   // Format based on requested format
-  switch (format) {
-    case "short":
-      return dateObj.toLocaleDateString();
-    case "long":
-      return dateObj.toLocaleDateString(undefined, {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    case "medium":
-    default:
-      return dateObj.toLocaleDateString(undefined, {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
+  if (format === "short") {
+    return dateObj.toLocaleDateString('en-US', {
+      month: 'numeric',
+      day: 'numeric',
+      year: '2-digit'
+    });
+  }
+  
+  if (format === "long") {
+    return dateObj.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  }
+  
+  // Default to medium format
+  return dateObj.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+  } catch (error) {
+    console.error("Error in formatDateForDisplay:", error, "Input:", date);
+    return "Invalid Date";
   }
 }
 
@@ -86,4 +97,4 @@ export function prepareDateForSubmission(date: Date | string | undefined): strin
   }
   
   return date.toISOString();
-} 
+}

@@ -93,26 +93,20 @@ export function PageRecentEntries({
 
   // Sort entries by date
   const sortedEntries = useMemo(() => {
-    if (!filteredEntries || !Array.isArray(filteredEntries)) return []
+    if (!filteredEntries || !Array.isArray(filteredEntries)) return [];
     
     return [...filteredEntries].sort((a, b) => {
-      // 1. Capture potentially undefined values
-      const rawDateA = a.date;
-      const rawDateB = b.date;
+      // Safely handle potentially undefined dates
+      const dateAValue = a.date !== undefined && a.date !== null ? a.date : null;
+      const dateBValue = b.date !== undefined && b.date !== null ? b.date : null;
       
-      // 2. Define safe/fallback defaults
-      const safeDateA = (rawDateA !== undefined && rawDateA !== null)
-        ? new Date(rawDateA)
-        : new Date(0); // Default to Unix epoch
+      // Create Date objects safely
+      const dateA = dateAValue ? new Date(dateAValue).getTime() : 0;
+      const dateB = dateBValue ? new Date(dateBValue).getTime() : 0;
       
-      const safeDateB = (rawDateB !== undefined && rawDateB !== null)
-        ? new Date(rawDateB)
-        : new Date(0); // Default to Unix epoch
-      
-      // 3. Compare dates safely
-      return sortOrder === "desc" ? safeDateB.getTime() - safeDateA.getTime() : safeDateA.getTime() - safeDateB.getTime();
-    })
-  }, [filteredEntries, sortOrder])
+      return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+    });
+  }, [filteredEntries, sortOrder]);
 
   // Get limited entries for display
   const displayEntries = useMemo(() => {
@@ -292,7 +286,31 @@ export function PageRecentEntries({
         
         <div className="space-y-4">
           {displayEntries.map((entry) => {
-            if (!entry) return null
+            if (!entry) return null;
+            
+            // Safely format the date
+            let formattedDate = 'No date';
+            try {
+              if (entry.date === undefined || entry.date === null) {
+                formattedDate = 'No date';
+              } else {
+                const safeDate = entry.date instanceof Date ? entry.date : new Date(entry.date);
+                
+                if (!(safeDate instanceof Date) || isNaN(safeDate.getTime())) {
+                  console.warn("Invalid date in entry:", entry.id, entry.date);
+                  formattedDate = 'Invalid date';
+                } else {
+                  formattedDate = safeDate.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  });
+                }
+              }
+            } catch (error) {
+              console.error("Error formatting date:", error, "Entry:", entry.id);
+              formattedDate = 'Invalid date';
+            }
             
             return (
               <div key={entry.id} className="flex flex-col gap-2 border-b pb-3 dark:border-border/50">
@@ -313,7 +331,7 @@ export function PageRecentEntries({
                     </div>
                     <div className="text-xs text-muted-foreground">
                       <span className="font-medium">Staff:</span> {entry.staff_name} •{" "}
-                      <span className="font-medium">Date:</span> {entry.date ? formatDate(new Date(entry.date).toISOString()) : 'No date'} •{" "}
+                      <span className="font-medium">Date:</span> {formattedDate} •{" "}
                       <span className="font-medium">Shift:</span> {entry.shift}
                     </div>
                   </div>
@@ -349,4 +367,4 @@ export function PageRecentEntries({
       </CardContent>
     </Card>
   )
-} 
+}

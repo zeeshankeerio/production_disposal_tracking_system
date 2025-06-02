@@ -48,6 +48,44 @@ export async function POST(request: Request) {
       } as ApiResponse<ProductionEntry>, { status: 400 })
     }
     
+    // Validate dates
+    const productionDate = new Date(entry.date)
+    const expirationDate = new Date(entry.expiration_date)
+    
+    if (isNaN(productionDate.getTime())) {
+      return NextResponse.json({
+        success: false,
+        error: "Invalid production date format",
+        statusCode: 400
+      } as ApiResponse<ProductionEntry>, { status: 400 })
+    }
+    
+    if (isNaN(expirationDate.getTime())) {
+      return NextResponse.json({
+        success: false,
+        error: "Invalid expiration date format",
+        statusCode: 400
+      } as ApiResponse<ProductionEntry>, { status: 400 })
+    }
+    
+    // Ensure expiration date is after production date
+    if (expirationDate <= productionDate) {
+      return NextResponse.json({
+        success: false,
+        error: "Expiration date must be after production date",
+        statusCode: 400
+      } as ApiResponse<ProductionEntry>, { status: 400 })
+    }
+    
+    // Validate quantity
+    if (typeof entry.quantity !== 'number' || entry.quantity <= 0) {
+      return NextResponse.json({
+        success: false,
+        error: "Invalid quantity value",
+        statusCode: 400
+      } as ApiResponse<ProductionEntry>, { status: 400 })
+    }
+    
     // Ensure the product exists
     const product = await db.getProduct(entry.product_id)
     if (!product) {

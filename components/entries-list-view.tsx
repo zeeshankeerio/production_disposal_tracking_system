@@ -35,6 +35,7 @@ export function EntriesListView({
 }: EntriesListViewProps) {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedProduct, setSelectedProduct] = useState<string>("all")
+  const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [currentPage, setCurrentPage] = useState(1)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -46,12 +47,18 @@ export function EntriesListView({
   const { products, refreshData } = useData()
   const { toast } = useToast()
   
+  // Get unique categories from products
+  const categories = useMemo(() => {
+    const uniqueCategories = new Set(products.map(p => p.category))
+    return Array.from(uniqueCategories).sort()
+  }, [products])
+  
   // Type guard to check if an entry is a DisposalEntry
   const isDisposalEntry = (entry: ProductionEntry | DisposalEntry): entry is DisposalEntry => {
     return 'reason' in entry
   }
   
-  // Filter entries based on search term, product, and date range
+  // Filter entries based on search term, product, category, and date range
   const filteredEntries = useMemo(() => {
     return entries.filter(entry => {
       const matchesSearch = searchTerm ? (
@@ -62,6 +69,9 @@ export function EntriesListView({
       ) : true
       
       const matchesProduct = selectedProduct === "all" || entry.product_name === selectedProduct
+      
+      const matchesCategory = selectedCategory === "all" || 
+        products.find(p => p.name === entry.product_name)?.category === selectedCategory
       
       // 1. Capture potentially undefined value
       const rawDate = entry.date;
@@ -81,18 +91,24 @@ export function EntriesListView({
         ? safeDate >= dateRange.from && safeDate <= dateRange.to
         : true
       
-      return matchesSearch && matchesProduct && isInDateRange
+      return matchesSearch && matchesProduct && matchesCategory && isInDateRange
     })
-  }, [entries, searchTerm, selectedProduct, dateRange])
+  }, [entries, searchTerm, selectedProduct, selectedCategory, dateRange, products])
   
   // Sort entries by date
   const sortedEntries = useMemo(() => {
     return [...filteredEntries].sort((a, b) => {
-      const dateA = new Date(a.date).getTime()
-      const dateB = new Date(b.date).getTime()
-      return sortOrder === "desc" ? dateB - dateA : dateA - dateB
-    })
-  }, [filteredEntries, sortOrder])
+      // Safely handle potentially undefined dates
+      const dateAValue = a.date !== undefined && a.date !== null ? a.date : null;
+      const dateBValue = b.date !== undefined && b.date !== null ? b.date : null;
+      
+      // Create Date objects safely
+      const dateA = dateAValue ? new Date(dateAValue).getTime() : 0;
+      const dateB = dateBValue ? new Date(dateBValue).getTime() : 0;
+      
+      return sortOrder === "desc" ? dateB - dateA : dateA - dateB;
+    });
+  }, [filteredEntries, sortOrder]);
   
   // Paginate entries
   const paginatedEntries = useMemo(() => {
@@ -106,7 +122,7 @@ export function EntriesListView({
   // Reset to page 1 when filters change
   useMemo(() => {
     setCurrentPage(1)
-  }, [searchTerm, selectedProduct, dateRange, sortOrder])
+  }, [searchTerm, selectedProduct, selectedCategory, dateRange, sortOrder])
   
   // Handle refresh
   const handleRefresh = async () => {
@@ -124,126 +140,108 @@ export function EntriesListView({
   return (
     <Card className="w-full dark:border-border/50">
       <CardHeader>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
-          <div>
-            <CardTitle>{title}</CardTitle>
-            {description && <CardDescription>{description}</CardDescription>}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={handleRefresh}
-              disabled={isRefreshing}
-              className="transition-all hover:shadow-md dark:shadow-none dark:hover:shadow-none dark:border-border/50"
-            >
-              <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => setSortOrder(sortOrder === "desc" ? "asc" : "desc")}
-              className="transition-all hover:shadow-md dark:shadow-none dark:hover:shadow-none dark:border-border/50"
-            >
-              {sortOrder === "desc" ? (
-                <>
-                  <ArrowDown className="mr-2 h-4 w-4" />
-                  Newest
-                </>
-              ) : (
-                <>
-                  <ArrowUp className="mr-2 h-4 w-4" />
-                  Oldest
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
+        <CardTitle>{title}</CardTitle>
+        {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
       <CardContent>
-        {allowFiltering && (
-          <div className="flex flex-col lg:flex-row gap-3 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search entries..." 
-                className="pl-8" 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              {searchTerm && (
-                <button
-                  className="absolute right-2 top-2.5 text-muted-foreground hover:text-foreground"
-                  onClick={() => setSearchTerm("")}
-                  aria-label="Clear search"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              )}
-            </div>
-            
-            <div className="flex flex-row gap-3">
-              <div className="w-full sm:w-[180px]">
-                <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filter by product" />
+        <div className="space-y-4">
+          {allowFiltering && (
+            <div className="flex flex-col sm:flex-row gap-2">
+              <div className="flex-1">
+                <Input
+                  placeholder="Search entries..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Products</SelectItem>
-                    {products.map(product => (
-                      <SelectItem key={product.id} value={product.name}>
-                        {product.name}
+                    <SelectItem value="all">All Categories</SelectItem>
+                    {categories.map((category) => (
+                      <SelectItem key={category} value={category}>
+                        {category}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                <Select value={selectedProduct} onValueChange={setSelectedProduct}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Select product" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Products</SelectItem>
+                    {products
+                      .filter(p => selectedCategory === "all" || p.category === selectedCategory)
+                      .map((product) => (
+                        <SelectItem key={product.id} value={product.name}>
+                          {product.name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+                <DateRangePicker
+                  value={dateRange}
+                  onValueChange={setDateRange}
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => {
+                    setSearchTerm("")
+                    setSelectedProduct("all")
+                    setSelectedCategory("all")
+                    setDateRange({
+                      from: subDays(new Date(), 30),
+                      to: new Date()
+                    })
+                  }}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {sortedEntries.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              {searchTerm || selectedProduct !== "all" || selectedCategory !== "all" || dateRange
+                ? "No matching entries found"
+                : `No ${type} entries found`}
+            </div>
+          ) : (
+            <>
+              <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
+                {paginatedEntries.map((entry) => (
+                  <EntryDetailView 
+                    key={entry.id} 
+                    entry={entry} 
+                    type={type} 
+                  />
+                ))}
               </div>
               
-              <DateRangePicker
-                value={dateRange}
-                onValueChange={setDateRange}
-                align="end"
-                className="w-[250px]"
-              />
-            </div>
-          </div>
-        )}
-        
-        {sortedEntries.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            {searchTerm || selectedProduct !== "all" || dateRange
-              ? "No matching entries found"
-              : `No ${type} entries found`}
-          </div>
-        ) : (
-          <>
-            <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
-              {paginatedEntries.map((entry) => (
-                <EntryDetailView 
-                  key={entry.id} 
-                  entry={entry} 
-                  type={type} 
-                />
-              ))}
-            </div>
-            
-            {totalPages > 1 && (
-              <div className="flex justify-center mt-6">
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
-                />
+              {totalPages > 1 && (
+                <div className="flex justify-center mt-6">
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPageChange={setCurrentPage}
+                  />
+                </div>
+              )}
+              
+              <div className="text-xs text-muted-foreground text-center mt-4">
+                Showing {paginatedEntries.length} of {sortedEntries.length} entries
               </div>
-            )}
-            
-            <div className="text-xs text-muted-foreground text-center mt-4">
-              Showing {paginatedEntries.length} of {sortedEntries.length} entries
-            </div>
-          </>
-        )}
+            </>
+          )}
+        </div>
       </CardContent>
     </Card>
   )
-} 
+}

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { DateRange } from "react-day-picker"
 import { format, subDays } from "date-fns"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Search, Filter, RefreshCw, FileText } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
@@ -20,7 +20,6 @@ import { PageRecentEntries } from "@/components/page-recent-entries"
 import { EntriesListView } from "@/components/entries-list-view"
 import { CopyrightFooter } from "@/components/copyright-footer"
 import { QuickNav } from "@/components/quick-nav"
-import { EntryDetailsView } from "@/components/entry-details-view"
 
 // Custom tooltip component
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -52,6 +51,7 @@ export default function ProductionPage() {
   })
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [showAllEntries, setShowAllEntries] = useState(false)
   const { toast } = useToast()
   
   // Set mounted state after initial render
@@ -103,6 +103,25 @@ export default function ProductionPage() {
     date,
     value
   }))
+  
+  // Calculate shift distribution
+  const shiftDistribution = filteredEntries.reduce((acc, entry) => {
+    const shift = entry.shift || 'Unspecified'
+    if (!acc[shift]) {
+      acc[shift] = 0
+    }
+    acc[shift]++
+    return acc
+  }, {} as Record<string, number>)
+
+  // Convert shift distribution to array for pie chart
+  const shiftChartData = Object.entries(shiftDistribution).map(([name, value]) => ({
+    name,
+    value
+  }))
+
+  // Colors for pie chart segments
+  const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
   
   // Handle refresh
   const handleRefresh = async () => {
@@ -239,10 +258,10 @@ export default function ProductionPage() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <h3 className="text-sm font-medium">Total Production</h3>
-                  <p className="text-2xl font-bold">{totalProduction}</p>
+                  <p className="text-2xl font-bold">{totalProduction.toLocaleString()}</p>
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Products</h3>
+                  <h3 className="text-sm font-medium">Unique Products</h3>
                   <p className="text-2xl font-bold">{uniqueProducts}</p>
                 </div>
               </div>
@@ -274,31 +293,72 @@ export default function ProductionPage() {
             </CardContent>
           </Card>
 
-          <Card className="col-span-2">
+          <Card className="transition-all hover:shadow-md dark:shadow-none dark:hover:shadow-none dark:border-border/50">
             <CardHeader>
-              <CardTitle>Recent Production Entries</CardTitle>
-              <CardDescription>Latest production records</CardDescription>
+              <CardTitle>Entries by Shift</CardTitle>
+              <CardDescription>
+                Distribution of entries across different shifts
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <PageRecentEntries
-                title="Recent Production Entries"
-                description="Latest production records"
-                type="production"
-                allowDelete={true}
-                showFilters={false}
-              />
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={shiftChartData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {shiftChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          return (
+                            <div className="bg-background border border-border rounded-md shadow-md p-3 backdrop-blur-sm dark:bg-background/90 dark:border-border/50">
+                              <p className="text-sm font-semibold">{payload[0].name}</p>
+                              <p className="text-sm">Entries: {payload[0].value}</p>
+                            </div>
+                          )
+                        }
+                        return null
+                      }}
+                    />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
         </div>
       </div>
 
-      <div className="mt-8">
-        <EntryDetailsView
-          type="production"
-          title="Production Entries"
-          description="View and manage all production entries with advanced filtering and sorting options"
-        />
-      </div>
+      {/* Detailed Entries Section */}
+      <Card className="transition-all hover:shadow-md dark:shadow-none dark:hover:shadow-none dark:border-border/50">
+        <CardHeader>
+          <CardTitle>Detailed Entries</CardTitle>
+          <CardDescription>
+            View and manage all production entries with advanced filtering and sorting options
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EntriesListView
+            entries={productionEntries}
+            title="All Production Entries"
+            description="Complete list of production records"
+            type="production"
+            pageSize={10}
+            allowFiltering={true}
+          />
+        </CardContent>
+      </Card>
       
       <CopyrightFooter />
     </div>

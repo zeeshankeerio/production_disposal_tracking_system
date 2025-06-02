@@ -141,6 +141,27 @@ export const clearProducts = async (): Promise<boolean> => {
   }
 }
 
+// Helper function to format date strings consistently
+const formatDateValue = (value: any): string => {
+  if (!value) return '';
+  
+  try {
+    if (value instanceof Date) {
+      return value.toISOString().split('T')[0];
+    }
+    
+    const date = new Date(value);
+    if (isNaN(date.getTime())) {
+      throw new Error('Invalid date');
+    }
+    
+    return date.toISOString().split('T')[0];
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    throw new Error('Invalid date format');
+  }
+};
+
 // Production entries API
 export const getProductionEntries = async (): Promise<ProductionEntry[]> => {
   try {
@@ -166,14 +187,6 @@ export const createProductionEntry = async (entry: Omit<ProductionEntry, "id">):
   try {
     const supabase = createServerSupabaseClient()
     
-    // Helper function to format date strings
-    const formatDateValue = (value: any): string => {
-      if (value && typeof value === 'object' && 'toISOString' in value) {
-        return value.toISOString().split('T')[0];
-      }
-      return String(value);
-    };
-    
     const { data, error } = await supabase
       .from('production_entries')
       .insert({
@@ -192,7 +205,8 @@ export const createProductionEntry = async (entry: Omit<ProductionEntry, "id">):
     
     return {
       ...data,
-      date: new Date(data.date)
+      date: new Date(data.date),
+      expiration_date: data.expiration_date
     }
   } catch (err) {
     throw handleSupabaseError(err)
@@ -253,14 +267,6 @@ export const getDisposalEntries = async (): Promise<DisposalEntry[]> => {
 export const createDisposalEntry = async (entry: Omit<DisposalEntry, "id">): Promise<DisposalEntry | null> => {
   try {
     const supabase = createServerSupabaseClient()
-    
-    // Helper function to format date strings
-    const formatDateValue = (value: any): string => {
-      if (value && typeof value === 'object' && 'toISOString' in value) {
-        return value.toISOString().split('T')[0];
-      }
-      return String(value);
-    };
     
     const { data, error } = await supabase
       .from('disposal_entries')

@@ -148,7 +148,7 @@ export function ProductionForm() {
       product_name: data.product_name,
       quantity: data.quantity,
       notes: data.notes,
-      expiration_date: safeExpirationDate.toISOString(), // Store as ISO string
+      expiration_date: safeExpirationDate.toISOString().split('T')[0], // Format as YYYY-MM-DD string
     }
 
     // Debug log to check new entry
@@ -254,37 +254,53 @@ export function ProductionForm() {
         if (!expirationDate || isNaN(expirationDate.getTime())) {
           throw new Error("Invalid expiration date")
         }
-        
-        // Format dates for submission
-        const submissionEntry = {
+
+        // Ensure expiration date is after production date
+        if (expirationDate <= productionDate) {
+          throw new Error("Expiration date must be after production date")
+        }
+
+        // Create the production entry with common fields
+        const productionEntry = {
           product_id: selectedProductData.id,
           product_name: entry.product_name,
           quantity: entry.quantity,
-          date: new Date(productionDate.toISOString()), // Keep as Date object
-          expiration_date: expirationDate.toISOString(), // Keep as string
+          date: productionDate,
           shift: commonFields.shift,
           staff_name: commonFields.staff_name,
-          notes: entry.notes || ""
+          expiration_date: expirationDate.toISOString().split('T')[0], // Convert to YYYY-MM-DD string
+          notes: entry.notes || "",
         }
-        
-        return addProductionEntry(submissionEntry)
+
+        // Add the entry
+        await addProductionEntry(productionEntry)
       })
 
       // Wait for all submissions to complete
       await Promise.all(submissionPromises)
-      
-      // Clear cart after successful submission
+
+      // Clear the cart and reset form
       setCartEntries([])
-      
+      form.reset({
+        product_name: "",
+        quantity: 0,
+        date: new Date(),
+        shift: "morning",
+        staff_name: "",
+        notes: "",
+        expiration_date: new Date(new Date().setDate(new Date().getDate() + 7)),
+      })
+      setSelectedProduct(null)
+
       // Refresh data to update the UI
-      await refreshData();
-      
+      await refreshData()
+
       toast({
         title: "Success",
-        description: `${cartEntries.length} production entries added successfully`,
+        description: "All entries have been submitted successfully.",
       })
     } catch (error) {
-      console.error("Cart submission error:", error)
+      console.error("Error submitting cart:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to submit entries. Please try again.",
@@ -537,24 +553,17 @@ export function ProductionForm() {
                 // 1. Capture potentially undefined value
                 const rawExpirationDate = entry.expiration_date;
 
-                // 2. Use current date as default if undefined or invalid
-                let formattedExpirationDate = "No date";
-                let safeExpirationDate = rawExpirationDate ? new Date(rawExpirationDate) : new Date();
-                if (!isNaN(safeExpirationDate.getTime())) {
-                  formattedExpirationDate = safeExpirationDate.toLocaleString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  });
-                } else {
-                  // fallback to current date
-                  safeExpirationDate = new Date();
-                  formattedExpirationDate = safeExpirationDate.toLocaleString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  });
-                }
+                // 2. Define a safe/fallback default
+                const safeExpirationDate = (rawExpirationDate !== undefined && rawExpirationDate !== null)
+                  ? new Date(rawExpirationDate)
+                  : new Date(0); // Default to Unix epoch
+
+                // 3. Format the date safely
+                const formattedExpirationDate = safeExpirationDate.toLocaleString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                });
 
                 return (
                   <div

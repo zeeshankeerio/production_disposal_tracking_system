@@ -132,7 +132,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           id: `mock-${Date.now()}`,
           ...entryWithoutId,
           date: dateValue, // Use the properly formatted date
-          expiration_date: entry.expiration_date, // Ensure expiration date is included
+          expiration_date: expirationDateValue, // Convert expiration_date to Date object
           notes: entry.notes || ""
         }
         
@@ -169,7 +169,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         const newEntry = {
           ...responseData,
           date: isoStringToDate(responseData.date) || new Date(),
-          expiration_date: responseData.expiration_date // Keep as string for database compatibility
+          expiration_date: isoStringToDate(responseData.expiration_date) || new Date() // Convert expiration_date to Date object
         };
         
         setProductionEntries((prev) => [...prev, newEntry])

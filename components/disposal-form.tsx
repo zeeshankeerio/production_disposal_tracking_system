@@ -127,7 +127,7 @@ export function DisposalForm() {
       quantity: 0,
       date: new Date(),
       shift: "morning",
-      staff_name: "",
+      staff_name: commonFields.staff_name,
       reason: "",
       notes: "",
     },
@@ -149,10 +149,14 @@ export function DisposalForm() {
           ...prev,
           [name]: value[name]
         }))
+        // Also update the form's staff_name field when commonFields changes
+        if (name === "staff_name") {
+          form.setValue("staff_name", value[name] || "")
+        }
       }
     })
     return () => subscription.unsubscribe()
-  }, [form.watch])
+  }, [form.watch, form.setValue])
 
   const addToCart = (data: DisposalFormValues) => {
     // Debug log to check incoming data
@@ -183,7 +187,7 @@ export function DisposalForm() {
       quantity: data.quantity,
       reason: data.reason,
       notes: data.notes,
-      date: safeDisposalDate.toISOString(), // Store as ISO string
+      date: safeDisposalDate.toISOString().split('T')[0], // Format as YYYY-MM-DD string
     }
 
     // Debug log to check new entry
@@ -296,44 +300,56 @@ export function DisposalForm() {
           throw new Error(`Product not found: ${entry.product_name}`)
         }
 
-        // Validate disposal date
+        // Validate dates
         const disposalDate = commonFields.date ? new Date(commonFields.date) : null
 
         if (!disposalDate || isNaN(disposalDate.getTime())) {
           throw new Error("Invalid disposal date")
         }
-        
-        // Format dates for submission
-        const submissionEntry = {
-          id: Date.now().toString(),
+
+        // Create the disposal entry with common fields
+        const disposalEntry = {
+          id: `temp-${Date.now()}`, // Temporary ID that will be replaced by the backend
           product_id: selectedProductData.id,
           product_name: entry.product_name,
           quantity: entry.quantity,
-          date: disposalDate.toISOString(), // Convert to ISO string
+          date: disposalDate,
           shift: commonFields.shift,
-          reason: entry.reason,
           staff_name: commonFields.staff_name,
-          notes: entry.notes || ""
+          reason: entry.reason,
+          notes: entry.notes || "",
         }
-        
-        return addDisposalEntry(submissionEntry)
+
+        // Add the entry
+        await addDisposalEntry(disposalEntry)
       })
 
       // Wait for all submissions to complete
       await Promise.all(submissionPromises)
-      
-      // Clear cart after successful submission
+
+      // Clear the cart and reset form
       setCartEntries([])
-      
+      form.reset({
+        product_name: "",
+        quantity: 0,
+        date: new Date(),
+        shift: "morning",
+        staff_name: "",
+        reason: "",
+        notes: "",
+      })
+      setSelectedProduct(null)
+      setSelectedReasons([])
+
       // Refresh data to update the UI
-      await refreshData();
-      
+      await refreshData()
+
       toast({
         title: "Success",
-        description: `${cartEntries.length} disposal entries added successfully`,
+        description: "All entries have been submitted successfully.",
       })
     } catch (error) {
-      console.error("Cart submission error:", error)
+      console.error("Error submitting cart:", error)
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to submit entries. Please try again.",
@@ -558,28 +574,8 @@ export function DisposalForm() {
             </div>
             <div className="space-y-2">
               {cartEntries.map((entry) => {
-                // 1. Capture potentially undefined value
-                const rawDate = entry.date;
-
-                // 2. Use current date as default if undefined or invalid
-                let formattedDate = "No date";
-                let safeDate = rawDate ? new Date(rawDate) : new Date();
-                if (!isNaN(safeDate.getTime())) {
-                  formattedDate = safeDate.toLocaleString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  });
-                } else {
-                  // fallback to current date
-                  safeDate = new Date();
-                  formattedDate = safeDate.toLocaleString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  });
-                }
-
+                const formattedDate = formatDate(commonFields.date)
+                
                 return (
                   <div
                     key={entry.id}

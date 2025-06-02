@@ -23,10 +23,16 @@ export function formatDate(
   if (!dateString) return "No date"
   
   try {
+    // Handle the case where dateString might be undefined or null despite the check above
+    if (dateString === undefined || dateString === null) {
+      console.warn("Date is undefined or null")
+      return "No date"
+    }
+    
     const date = typeof dateString === 'string' ? new Date(dateString) : dateString
     
     // Check if date is valid
-    if (isNaN(date.getTime())) {
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
       console.warn("Invalid date:", dateString)
       return "Invalid date"
     }
