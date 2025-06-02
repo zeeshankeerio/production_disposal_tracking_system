@@ -548,14 +548,14 @@ export default function DisposalPage() {
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">From:</span>
                   <Select
-                    value={dateRange?.from ? dateRange.from.getFullYear().toString() : new Date().getFullYear().toString()}
+                    value={dateRange?.from ? dateRange.from.getFullYear().toString() : "2010"}
                     onValueChange={(year) => handleFromDateChange('year', year)}
                   >
                     <SelectTrigger className="w-[100px]">
                       <SelectValue placeholder="Year" />
                     </SelectTrigger>
                     <SelectContent>
-                      {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                      {Array.from({ length: new Date().getFullYear() - 2010 + 1 }, (_, i) => new Date().getFullYear() - i).map((year) => (
                         <SelectItem key={year} value={year.toString()}>
                           {year}
                         </SelectItem>
@@ -669,7 +669,10 @@ export default function DisposalPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    setDateRange(undefined);
+                    const startDate = new Date(2010, 0, 1); // January 1st, 2010
+                    const endDate = new Date();
+                    setDateRange({ from: startDate, to: endDate });
+                    setActiveView("all");
                   }}
                   className="h-8"
                 >
