@@ -5,6 +5,7 @@ import {
 } from "@/lib/types"
 import { createServerSupabaseClient } from "./supabase"
 import { handleSupabaseError } from "./supabase"
+import { fromEastern } from '@/lib/date-utils';
 
 // Products API
 export const getProducts = async (): Promise<Product[]> => {
@@ -147,7 +148,7 @@ const formatDateValue = (value: any): string => {
   
   try {
     if (value instanceof Date) {
-      return value.toISOString().split('T')[0];
+      return fromEastern(value).toISOString().split('T')[0];
     }
     
     const date = new Date(value);
@@ -155,7 +156,7 @@ const formatDateValue = (value: any): string => {
       throw new Error('Invalid date');
     }
     
-    return date.toISOString().split('T')[0];
+    return fromEastern(date).toISOString().split('T')[0];
   } catch (error) {
     console.error('Error formatting date:', error);
     throw new Error('Invalid date format');

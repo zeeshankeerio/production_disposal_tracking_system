@@ -59,7 +59,7 @@ const DISPOSAL_REASONS = [
 
 const disposalSchema = z.object({
   product_name: z.string().min(1, "Product name is required"),
-  quantity: z.number().min(1, "Quantity must be greater than 0").max(10000, "Quantity seems too high"),
+  quantity: z.coerce.number().min(1, "Quantity must be greater than 0").max(10000, "Quantity seems too high"),
   date: z.date({
     required_error: "Date is required",
   }).refine((date) => {
@@ -159,39 +159,36 @@ export function DisposalForm() {
   }, [form.watch, form.setValue])
 
   const addToCart = (data: DisposalFormValues) => {
-    // Debug log to check incoming data
-    console.log("Adding to cart:", data);
+    // Validate quantity
+    const quantity = Number(data.quantity)
+    if (isNaN(quantity) || quantity <= 0) {
+      toast({
+        title: "Error",
+        description: "Invalid quantity value",
+        variant: "destructive",
+      })
+      return
+    }
 
-    // 1. Capture potentially undefined value
-    const rawDisposalDate = data.date;
-
-    // 2. Define a safe/fallback default
-    const safeDisposalDate = (rawDisposalDate !== undefined && rawDisposalDate !== null)
-      ? new Date(rawDisposalDate)
-      : new Date(); // Default to current date
-
-    // 3. Validate the safe date
-    if (isNaN(safeDisposalDate.getTime())) {
-      console.error("Invalid disposal date:", rawDisposalDate);
+    // Validate date
+    const disposalDate = data.date ? new Date(data.date) : new Date()
+    if (isNaN(disposalDate.getTime())) {
       toast({
         title: "Error",
         description: "Invalid disposal date",
         variant: "destructive",
-      });
-      return;
+      })
+      return
     }
 
     const newEntry: CartEntry = {
       id: Date.now().toString(),
       product_name: data.product_name,
-      quantity: data.quantity,
+      quantity: quantity,
       reason: data.reason,
       notes: data.notes,
-      date: safeDisposalDate.toISOString().split('T')[0], // Format as YYYY-MM-DD string
+      date: disposalDate.toISOString().split('T')[0], // Format as YYYY-MM-DD string
     }
-
-    // Debug log to check new entry
-    console.log("New cart entry:", newEntry);
 
     setCartEntries([...cartEntries, newEntry])
     
@@ -300,10 +297,15 @@ export function DisposalForm() {
           throw new Error(`Product not found: ${entry.product_name}`)
         }
 
-        // Validate dates
-        const disposalDate = commonFields.date ? new Date(commonFields.date) : null
+        // Validate quantity
+        const quantity = Number(entry.quantity)
+        if (isNaN(quantity) || quantity <= 0) {
+          throw new Error("Invalid quantity value")
+        }
 
-        if (!disposalDate || isNaN(disposalDate.getTime())) {
+        // Validate date
+        const disposalDate = commonFields.date ? new Date(commonFields.date) : new Date()
+        if (isNaN(disposalDate.getTime())) {
           throw new Error("Invalid disposal date")
         }
 
@@ -312,7 +314,7 @@ export function DisposalForm() {
           id: `temp-${Date.now()}`, // Temporary ID that will be replaced by the backend
           product_id: selectedProductData.id,
           product_name: entry.product_name,
-          quantity: entry.quantity,
+          quantity: quantity,
           date: disposalDate,
           shift: commonFields.shift,
           staff_name: commonFields.staff_name,
@@ -477,7 +479,10 @@ export function DisposalForm() {
                           type="number"
                           placeholder="Enter quantity"
                           {...field}
-                          onChange={(e) => field.onChange(Number(e.target.value))}
+                          onChange={(e) => {
+                            const value = e.target.value === '' ? 0 : Number(e.target.value)
+                            field.onChange(value)
+                          }}
                           min={1}
                           max={10000}
                         />

@@ -28,6 +28,82 @@ export function isoStringToDate(isoString: string | null | undefined): Date | un
 }
 
 /**
+ * Converts a Date object to Eastern timezone
+ * @param date The date to convert
+ * @returns Date object in Eastern timezone
+ */
+export function toEastern(date: Date): Date {
+  const easternDate = new Date(date);
+  easternDate.setHours(easternDate.getHours() - 4); // Convert to Eastern time (UTC-4)
+  return easternDate;
+}
+
+/**
+ * Converts a Date object from Eastern timezone to UTC
+ * @param date The date in Eastern timezone
+ * @returns Date object in UTC
+ */
+export function fromEastern(date: Date): Date {
+  const utcDate = new Date(date);
+  utcDate.setHours(utcDate.getHours() + 4); // Convert from Eastern time (UTC-4)
+  return utcDate;
+}
+
+/**
+ * Formats a date in Eastern timezone
+ * @param date The date to format
+ * @param format The format type or format string
+ * @returns Formatted date string in Eastern timezone
+ */
+export function formatEastern(
+  date: Date | string | null | undefined,
+  format: "long" | "short" | "medium" | string = "medium"
+): string {
+  if (!date) return "N/A";
+  
+  try {
+    const dateObj = typeof date === "string" ? new Date(date) : date;
+    const easternDate = toEastern(dateObj);
+    
+    // Handle predefined format types
+    if (format === "short") {
+      return easternDate.toLocaleDateString('en-US', {
+        month: 'numeric',
+        day: 'numeric',
+        year: '2-digit',
+        timeZone: 'America/New_York'
+      });
+    }
+    
+    if (format === "long") {
+      return easternDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: 'America/New_York'
+      });
+    }
+    
+    if (format === "medium") {
+      return easternDate.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: 'America/New_York'
+      });
+    }
+    
+    // Handle custom format strings using date-fns
+    const { format: dateFnsFormat } = require('date-fns');
+    return dateFnsFormat(easternDate, format, { timeZone: 'America/New_York' });
+  } catch (error) {
+    console.error("Error in formatEastern:", error, "Input:", date);
+    return "Invalid Date";
+  }
+}
+
+/**
  * Formats a date for display in the UI
  * @param date The date to format
  * @param format The format type

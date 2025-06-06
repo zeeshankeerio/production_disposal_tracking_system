@@ -24,6 +24,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, FileDown, FileText } from "lucide-react"
 import { CopyrightFooter } from "@/components/copyright-footer"
 import { QuickNav } from "@/components/quick-nav"
+import { toEastern } from '@/lib/date-utils'
 
 // Custom tooltip component to handle all tooltip rendering
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -104,53 +105,48 @@ const isValidDate = (year: number, month: number, day: number): boolean => {
 
 // Helper function to get date range for predefined periods
 const getDateRangeForPeriod = (period: string): DateRange => {
-  const today = new Date()
-  today.setHours(23, 59, 59, 999)
+  const today = toEastern(new Date());
+  today.setHours(23, 59, 59, 999);
   
-  const startDate = new Date()
-  startDate.setHours(0, 0, 0, 0)
+  const startDate = toEastern(new Date());
+  startDate.setHours(0, 0, 0, 0);
   
   switch(period) {
     case "today":
-      return { from: startDate, to: today }
+      return { from: startDate, to: today };
     case "week":
-      const weekStart = new Date(startDate)
-      // Get Monday of current week (0 is Sunday, 1 is Monday)
-      const day = weekStart.getDay()
-      const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1) // Adjust for Sunday
-      weekStart.setDate(diff)
-      return { from: weekStart, to: today }
+      const weekStart = toEastern(new Date(startDate));
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      return { from: weekStart, to: today };
     case "month":
-      const monthStart = new Date(startDate)
-      monthStart.setDate(1) // Start from first day of current month
-      return { from: monthStart, to: today }
+      const monthStart = toEastern(new Date(startDate));
+      monthStart.setDate(1);
+      return { from: monthStart, to: today };
     case "three_months":
-      const threeMonthsStart = new Date(startDate)
-      threeMonthsStart.setMonth(threeMonthsStart.getMonth() - 3)
-      threeMonthsStart.setDate(1) // Start from first day of the month
-      return { from: threeMonthsStart, to: today }
+      const threeMonthsStart = toEastern(new Date(startDate));
+      threeMonthsStart.setMonth(threeMonthsStart.getMonth() - 3);
+      return { from: threeMonthsStart, to: today };
     case "quarter":
-      const quarterStart = new Date(startDate)
-      const currentQuarter = Math.floor(quarterStart.getMonth() / 3)
-      quarterStart.setMonth(currentQuarter * 3)
-      quarterStart.setDate(1)
-      return { from: quarterStart, to: today }
+      const quarterStart = toEastern(new Date(startDate));
+      const currentQuarter = Math.floor(quarterStart.getMonth() / 3);
+      quarterStart.setMonth(currentQuarter * 3);
+      quarterStart.setDate(1);
+      return { from: quarterStart, to: today };
     case "year":
-      const yearStart = new Date(startDate)
-      yearStart.setMonth(0)
-      yearStart.setDate(1)
-      return { from: yearStart, to: today }
+      const yearStart = toEastern(new Date(startDate));
+      yearStart.setMonth(0);
+      yearStart.setDate(1);
+      return { from: yearStart, to: today };
     case "all":
-      // Set to a reasonable start date (e.g., 5 years ago)
-      const allTimeStart = new Date(startDate)
-      allTimeStart.setFullYear(allTimeStart.getFullYear() - 5)
-      allTimeStart.setMonth(0)
-      allTimeStart.setDate(1)
-      return { from: allTimeStart, to: today }
+      const allTimeStart = toEastern(new Date(startDate));
+      allTimeStart.setFullYear(allTimeStart.getFullYear() - 5);
+      allTimeStart.setMonth(0);
+      allTimeStart.setDate(1);
+      return { from: allTimeStart, to: today };
     default:
-      return { from: startDate, to: today }
+      return { from: startDate, to: today };
   }
-}
+};
 
 export default function DashboardPage() {
   const { toast } = useToast()
@@ -169,94 +165,72 @@ export default function DashboardPage() {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [chartType, setChartType] = useState<"bar" | "area" | "line">("area")
   const [mounted, setMounted] = useState(false)
+  const [tempDateRange, setTempDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 7),
+    to: new Date()
+  });
   
   // Filter data based on selected date range, product category, and product/reason filters
   const filteredProductionEntries = useMemo(() => {
-    if (!dateRange?.from) return productionEntries
-    
     return productionEntries.filter(entry => {
-      if (!entry || !entry.date) return false
-      
-      const entryDate = new Date(entry.date)
-      if (isNaN(entryDate.getTime())) return false
-      
-      // Set time to start of day for entry date
-      entryDate.setHours(0, 0, 0, 0)
-      
-      // If only from date is selected, treat it as a single day filter
-      if (!dateRange.to && dateRange.from) {
-        const singleDay = new Date(dateRange.from.getTime())
-        singleDay.setHours(0, 0, 0, 0)
-        return isSameDay(entryDate, singleDay)
-      }
-      
-      // For date range, set proper start and end times
-      if (dateRange.from && dateRange.to) {
-        const startDate = new Date(dateRange.from.getTime())
-        startDate.setHours(0, 0, 0, 0)
-        const endDate = new Date(dateRange.to.getTime())
-        endDate.setHours(23, 59, 59, 999)
-        
-        // Check if entry date falls within the range
-        const isInDateRange = isWithinInterval(entryDate, {
-          start: startDate,
-          end: endDate
-        })
-        
-        const matchesProduct = selectedProduct === "all" || entry.product_name === selectedProduct
-        const matchesCategory = selectedCategory === "all" || 
-          products.find(p => p.name === entry.product_name)?.category === selectedCategory
-        
-        return isInDateRange && matchesProduct && matchesCategory
-      }
-      
-      return false
-    })
-  }, [productionEntries, dateRange, selectedProduct, selectedCategory, products])
+      // Apply product filter
+      const matchesProduct = selectedProduct === "all" || entry.product_name === selectedProduct;
+      const matchesCategory = selectedCategory === "all" || 
+        products.find(p => p.name === entry.product_name)?.category === selectedCategory;
+
+      // Apply date filter
+      if (!dateRange?.from) return matchesProduct && matchesCategory;
+
+      // Convert entry date to Eastern timezone
+      const entryDate = toEastern(new Date(entry.date));
+      if (isNaN(entryDate.getTime())) return false;
+
+      // Convert range dates to Eastern timezone
+      const startDate = toEastern(new Date(dateRange.from));
+      startDate.setHours(0, 0, 0, 0);
+
+      const endDate = dateRange.to ? toEastern(new Date(dateRange.to)) : startDate;
+      endDate.setHours(23, 59, 59, 999);
+
+      // Check if entry date falls within the range
+      const isInDateRange = isWithinInterval(entryDate, {
+        start: startDate,
+        end: endDate
+      });
+
+      return matchesProduct && matchesCategory && isInDateRange;
+    });
+  }, [productionEntries, dateRange, selectedProduct, selectedCategory, products]);
   
   const filteredDisposalEntries = useMemo(() => {
-    if (!dateRange?.from) return disposalEntries
-    
     return disposalEntries.filter(entry => {
-      if (!entry || !entry.date) return false
-      
-      const entryDate = new Date(entry.date)
-      if (isNaN(entryDate.getTime())) return false
-      
-      // Set time to start of day for entry date
-      entryDate.setHours(0, 0, 0, 0)
-      
-      // If only from date is selected, treat it as a single day filter
-      if (!dateRange.to && dateRange.from) {
-        const singleDay = new Date(dateRange.from.getTime())
-        singleDay.setHours(0, 0, 0, 0)
-        return isSameDay(entryDate, singleDay)
-      }
-      
-      // For date range, set proper start and end times
-      if (dateRange.from && dateRange.to) {
-        const startDate = new Date(dateRange.from.getTime())
-        startDate.setHours(0, 0, 0, 0)
-        const endDate = new Date(dateRange.to.getTime())
-        endDate.setHours(23, 59, 59, 999)
-        
-        // Check if entry date falls within the range
-        const isInDateRange = isWithinInterval(entryDate, {
-          start: startDate,
-          end: endDate
-        })
-        
-        const matchesProduct = selectedProduct === "all" || entry.product_name === selectedProduct
-        const matchesReason = selectedReason === "all" || entry.reason === selectedReason
-        const matchesCategory = selectedCategory === "all" || 
-          products.find(p => p.name === entry.product_name)?.category === selectedCategory
-        
-        return isInDateRange && matchesProduct && matchesReason && matchesCategory
-      }
-      
-      return false
-    })
-  }, [disposalEntries, dateRange, selectedProduct, selectedReason, selectedCategory, products])
+      // Apply product and reason filters
+      const matchesProduct = selectedProduct === "all" || entry.product_name === selectedProduct;
+      const matchesReason = selectedReason === "all" || entry.reason === selectedReason;
+
+      // Apply date filter
+      if (!dateRange?.from) return matchesProduct && matchesReason;
+
+      // Convert entry date to Eastern timezone
+      const entryDate = toEastern(new Date(entry.date));
+      if (isNaN(entryDate.getTime())) return false;
+
+      // Convert range dates to Eastern timezone
+      const startDate = toEastern(new Date(dateRange.from));
+      startDate.setHours(0, 0, 0, 0);
+
+      const endDate = dateRange.to ? toEastern(new Date(dateRange.to)) : startDate;
+      endDate.setHours(23, 59, 59, 999);
+
+      // Check if entry date falls within the range
+      const isInDateRange = isWithinInterval(entryDate, {
+        start: startDate,
+        end: endDate
+      });
+
+      return matchesProduct && matchesReason && isInDateRange;
+    });
+  }, [disposalEntries, dateRange, selectedProduct, selectedReason]);
 
   // Calculate shift distribution data
   const productionShiftChartData = useMemo(() => {
@@ -306,34 +280,103 @@ export default function DashboardPage() {
   }, [products])
   
   // Function to export data to CSV
-  const exportToCSV = (data: any[], filename: string) => {
+  const exportToCSV = (data: any[], filename: string, dataType: "production" | "disposal") => {
     if (data.length === 0) return
     
-    // Get headers from first object
-    const headers = Object.keys(data[0])
-    
-    // Convert data to CSV format
-    const csvRows = []
-    csvRows.push(headers.join(','))
-    
-    for (const row of data) {
-      const values = headers.map(header => {
-        const value = row[header]
-        // Handle strings with commas by wrapping in quotes
-        return typeof value === 'string' && value.includes(',') 
-          ? `"${value}"` 
-          : value
-      })
-      csvRows.push(values.join(','))
+    // Create summary data
+    const summaryData = {
+      production: {
+        totalProduction: filteredProductionEntries.reduce((sum, entry) => sum + entry.quantity, 0),
+        productionByProduct: Object.entries(
+          filteredProductionEntries.reduce((acc, entry) => {
+            acc[entry.product_name] = (acc[entry.product_name] || 0) + entry.quantity
+            return acc
+          }, {} as Record<string, number>)
+        ).map(([name, value]) => ({ name, value })),
+        productionByShift: Object.entries(
+          filteredProductionEntries.reduce((acc, entry) => {
+            acc[entry.shift] = (acc[entry.shift] || 0) + entry.quantity
+            return acc
+          }, {} as Record<string, number>)
+        ).map(([name, value]) => ({ name, value }))
+      },
+      disposal: {
+        totalDisposal: filteredDisposalEntries.reduce((sum, entry) => sum + entry.quantity, 0),
+        disposalByProduct: Object.entries(
+          filteredDisposalEntries.reduce((acc, entry) => {
+            acc[entry.product_name] = (acc[entry.product_name] || 0) + entry.quantity
+            return acc
+          }, {} as Record<string, number>)
+        ).map(([name, value]) => ({ name, value })),
+        disposalByReason: Object.entries(
+          filteredDisposalEntries.reduce((acc, entry) => {
+            acc[entry.reason] = (acc[entry.reason] || 0) + entry.quantity
+            return acc
+          }, {} as Record<string, number>)
+        ).map(([name, value]) => ({ name, value }))
+      }
     }
+
+    // Create CSV content
+    const csvRows = []
     
+    // Add date range information
+    csvRows.push("Date Range")
+    csvRows.push(`From: ${format(dateRange?.from || new Date(), "yyyy-MM-dd")}`)
+    csvRows.push(`To: ${format(dateRange?.to || new Date(), "yyyy-MM-dd")}`)
+    csvRows.push("") // Empty row for spacing
+
+    // Add production summary
+    csvRows.push("Production Summary")
+    csvRows.push(`Total Production: ${summaryData.production.totalProduction}`)
+    csvRows.push("")
+    csvRows.push("Production by Product")
+    csvRows.push("Product,Quantity")
+    summaryData.production.productionByProduct.forEach(({ name, value }) => {
+      csvRows.push(`${name},${value}`)
+    })
+    csvRows.push("")
+    csvRows.push("Production by Shift")
+    csvRows.push("Shift,Quantity")
+    summaryData.production.productionByShift.forEach(({ name, value }) => {
+      csvRows.push(`${name},${value}`)
+    })
+    csvRows.push("")
+
+    // Add disposal summary
+    csvRows.push("Disposal Summary")
+    csvRows.push(`Total Disposal: ${summaryData.disposal.totalDisposal}`)
+    csvRows.push("")
+    csvRows.push("Disposal by Product")
+    csvRows.push("Product,Quantity")
+    summaryData.disposal.disposalByProduct.forEach(({ name, value }) => {
+      csvRows.push(`${name},${value}`)
+    })
+    csvRows.push("")
+    csvRows.push("Disposal by Reason")
+    csvRows.push("Reason,Quantity")
+    summaryData.disposal.disposalByReason.forEach(({ name, value }) => {
+      csvRows.push(`${name},${value}`)
+    })
+    csvRows.push("")
+
+    // Add efficiency metrics
+    const disposalRate = summaryData.production.totalProduction > 0 
+      ? (summaryData.disposal.totalDisposal / summaryData.production.totalProduction) * 100 
+      : 0
+    const efficiency = 100 - disposalRate
+
+    csvRows.push("Efficiency Metrics")
+    csvRows.push(`Disposal Rate: ${disposalRate.toFixed(2)}%`)
+    csvRows.push(`Efficiency: ${efficiency.toFixed(2)}%`)
+
     // Create downloadable link
     const csvContent = csvRows.join('\n')
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.setAttribute('href', url)
-    link.setAttribute('download', `${filename}.csv`)
+    link.setAttribute('download', `dashboard-summary-${format(new Date(), "yyyy-MM-dd")}.csv`)
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()
@@ -341,7 +384,7 @@ export default function DashboardPage() {
     
     toast({
       title: "Export Successful",
-      description: `${filename}.csv has been downloaded`,
+      description: "Dashboard summary has been exported to CSV",
     })
   }
   
@@ -360,32 +403,16 @@ export default function DashboardPage() {
   
   // Function to set predefined date ranges
   const setPredefinedDateRange = (range: string) => {
-    const today = new Date()
-    
-    switch(range) {
-      case "week":
-        setDateRange({ from: subDays(today, 7), to: today })
-        break
-      case "month":
-        setDateRange({ from: subDays(today, 30), to: today })
-        break
-      case "quarter":
-        setDateRange({ from: subDays(today, 90), to: today })
-        break
-      case "year":
-        setDateRange({ from: subDays(today, 365), to: today })
-        break
-      default:
-        setDateRange({ from: subDays(today, 7), to: today })
-    }
-    
-    setActiveView(range)
+    const newRange = getDateRangeForPeriod(range);
+    setTempDateRange(newRange);
+    setDateRange(newRange);
+    setActiveView(range);
   }
   
   // Update the date range handlers to ensure proper type handling
   const handleFromDateChange = (type: 'year' | 'month' | 'day', value: string) => {
-    const currentDate = dateRange?.from || new Date();
-    const newDate = new Date(currentDate);
+    const currentDate = tempDateRange?.from || new Date();
+    const newDate = toEastern(new Date(currentDate));
     
     switch(type) {
       case 'year':
@@ -399,12 +426,17 @@ export default function DashboardPage() {
         break;
     }
     
-    setDateRange(prev => prev ? { ...prev, from: newDate } : { from: newDate, to: newDate });
+    // If to date is not set or is the same as from date, update both
+    if (!tempDateRange?.to || isSameDay(newDate, toEastern(new Date(tempDateRange.to)))) {
+      setTempDateRange({ from: newDate, to: newDate });
+    } else {
+      setTempDateRange((prev: DateRange | undefined) => prev ? { ...prev, from: newDate } : { from: newDate, to: newDate });
+    }
   };
 
   const handleToDateChange = (type: 'year' | 'month' | 'day', value: string) => {
-    const currentDate = dateRange?.to || new Date();
-    const newDate = new Date(currentDate);
+    const currentDate = tempDateRange?.to || new Date();
+    const newDate = toEastern(new Date(currentDate));
     
     switch(type) {
       case 'year':
@@ -418,7 +450,39 @@ export default function DashboardPage() {
         break;
     }
     
-    setDateRange(prev => prev ? { ...prev, to: newDate } : { from: newDate, to: newDate });
+    // If from date is not set, set it to the same date
+    if (!tempDateRange?.from) {
+      setTempDateRange({ from: newDate, to: newDate });
+    } else {
+      setTempDateRange((prev: DateRange | undefined) => prev ? { ...prev, to: newDate } : { from: newDate, to: newDate });
+    }
+  };
+  
+  // Add the submit handler
+  const handleSubmit = () => {
+    if (tempDateRange?.from) {
+      const fromDate = toEastern(new Date(tempDateRange.from));
+      fromDate.setHours(0, 0, 0, 0);
+      
+      const toDate = tempDateRange.to ? toEastern(new Date(tempDateRange.to)) : fromDate;
+      toDate.setHours(23, 59, 59, 999);
+      
+      setDateRange({ from: fromDate, to: toDate });
+    }
+  };
+
+  // Update the handleClear function
+  const handleClear = () => {
+    const now = new Date();
+    const today = toEastern(now);
+    today.setHours(23, 59, 59, 999);
+    
+    const startDate = new Date(2010, 0, 1); // January 1, 2010
+    startDate.setHours(0, 0, 0, 0);
+    
+    setTempDateRange({ from: startDate, to: today });
+    setDateRange({ from: startDate, to: today });
+    setActiveView("all");
   };
   
   // Process data for dashboard when entries change
@@ -616,141 +680,144 @@ export default function DashboardPage() {
       </div>
       
       {/* Simplified Date Filter */}
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between border-b pb-4">
-        <div className="flex flex-wrap gap-4 items-center">
+      <div className="flex flex-wrap gap-4 items-center">
+        <div className="flex items-center gap-2">
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">From:</span>
-              <Select
-                value={dateRange?.from ? dateRange.from.getFullYear().toString() : "2010"}
-                onValueChange={(year) => handleFromDateChange('year', year)}
-              >
-                <SelectTrigger className="w-[100px]">
-                  <SelectValue placeholder="Year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: new Date().getFullYear() - 2010 + 1 }, (_, i) => new Date().getFullYear() - i).map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <span className="text-sm font-medium">From:</span>
+            <Select
+              value={tempDateRange?.from ? tempDateRange.from.getFullYear().toString() : "2010"}
+              onValueChange={(year) => handleFromDateChange('year', year)}
+            >
+              <SelectTrigger className="w-[100px]">
+                <SelectValue placeholder="Year" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: new Date().getFullYear() - 2010 + 1 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-              <Select
-                value={dateRange?.from ? dateRange.from.getMonth().toString() : new Date().getMonth().toString()}
-                onValueChange={(month) => handleFromDateChange('month', month)}
-              >
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 12 }, (_, i) => ({
-                    value: i.toString(),
-                    label: new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
-                  })).map(({ value, label }) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <Select
+              value={tempDateRange?.from ? tempDateRange.from.getMonth().toString() : new Date().getMonth().toString()}
+              onValueChange={(month) => handleFromDateChange('month', month)}
+            >
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Month" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 12 }, (_, i) => ({
+                  value: i.toString(),
+                  label: new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
+                })).map(({ value, label }) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-              <Select
-                value={dateRange?.from ? dateRange.from.getDate().toString() : new Date().getDate().toString()}
-                onValueChange={(day) => handleFromDateChange('day', day)}
-              >
-                <SelectTrigger className="w-[80px]">
-                  <SelectValue placeholder="Day" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from(
-                    { length: getDaysInMonth(
-                      dateRange?.from ? dateRange.from.getFullYear() : new Date().getFullYear(),
-                      dateRange?.from ? dateRange.from.getMonth() : new Date().getMonth()
-                    )},
-                    (_, i) => i + 1
-                  ).map((day) => (
-                    <SelectItem key={day} value={day.toString()}>
-                      {day}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select
+              value={tempDateRange?.from ? tempDateRange.from.getDate().toString() : new Date().getDate().toString()}
+              onValueChange={(day) => handleFromDateChange('day', day)}
+            >
+              <SelectTrigger className="w-[80px]">
+                <SelectValue placeholder="Day" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from(
+                  { length: getDaysInMonth(
+                    tempDateRange?.from ? tempDateRange.from.getFullYear() : new Date().getFullYear(),
+                    tempDateRange?.from ? tempDateRange.from.getMonth() : new Date().getMonth()
+                  )},
+                  (_, i) => i + 1
+                ).map((day) => (
+                  <SelectItem key={day} value={day.toString()}>
+                    {day}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Till:</span>
-              <Select
-                value={dateRange?.to ? dateRange.to.getFullYear().toString() : new Date().getFullYear().toString()}
-                onValueChange={(year) => handleToDateChange('year', year)}
-              >
-                <SelectTrigger className="w-[100px]">
-                  <SelectValue placeholder="Year" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium">Till:</span>
+            <Select
+              value={tempDateRange?.to ? tempDateRange.to.getFullYear().toString() : new Date().getFullYear().toString()}
+              onValueChange={(year) => handleToDateChange('year', year)}
+            >
+              <SelectTrigger className="w-[100px]">
+                <SelectValue placeholder="Year" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-              <Select
-                value={dateRange?.to ? dateRange.to.getMonth().toString() : new Date().getMonth().toString()}
-                onValueChange={(month) => handleToDateChange('month', month)}
-              >
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="Month" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from({ length: 12 }, (_, i) => ({
-                    value: i.toString(),
-                    label: new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
-                  })).map(({ value, label }) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <Select
+              value={tempDateRange?.to ? tempDateRange.to.getMonth().toString() : new Date().getMonth().toString()}
+              onValueChange={(month) => handleToDateChange('month', month)}
+            >
+              <SelectTrigger className="w-[120px]">
+                <SelectValue placeholder="Month" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 12 }, (_, i) => ({
+                  value: i.toString(),
+                  label: new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
+                })).map(({ value, label }) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-              <Select
-                value={dateRange?.to ? dateRange.to.getDate().toString() : new Date().getDate().toString()}
-                onValueChange={(day) => handleToDateChange('day', day)}
-              >
-                <SelectTrigger className="w-[80px]">
-                  <SelectValue placeholder="Day" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Array.from(
-                    { length: getDaysInMonth(
-                      dateRange?.to ? dateRange.to.getFullYear() : new Date().getFullYear(),
-                      dateRange?.to ? dateRange.to.getMonth() : new Date().getMonth()
-                    )},
-                    (_, i) => i + 1
-                  ).map((day) => (
-                    <SelectItem key={day} value={day.toString()}>
-                      {day}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <Select
+              value={tempDateRange?.to ? tempDateRange.to.getDate().toString() : new Date().getDate().toString()}
+              onValueChange={(day) => handleToDateChange('day', day)}
+            >
+              <SelectTrigger className="w-[80px]">
+                <SelectValue placeholder="Day" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from(
+                  { length: getDaysInMonth(
+                    tempDateRange?.to ? tempDateRange.to.getFullYear() : new Date().getFullYear(),
+                    tempDateRange?.to ? tempDateRange.to.getMonth() : new Date().getMonth()
+                  )},
+                  (_, i) => i + 1
+                ).map((day) => (
+                  <SelectItem key={day} value={day.toString()}>
+                    {day}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                const startDate = new Date(2010, 0, 1); // January 1st, 2010
-                const endDate = new Date();
-                setDateRange({ from: startDate, to: endDate });
-                setActiveView("all");
-              }}
+              onClick={handleClear}
               className="h-8"
             >
               Clear
+            </Button>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleSubmit}
+              className="h-8"
+            >
+              Apply Filter
             </Button>
           </div>
         </div>
@@ -775,11 +842,11 @@ export default function DashboardPage() {
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => exportToCSV(chartData, 'dashboard-data-export')}
+            onClick={() => exportToCSV(chartData, 'dashboard-summary', 'production')}
             className="transition-all hover:shadow-md"
           >
             <FileText className="mr-2 h-4 w-4" />
-            Export
+            Export Dashboard Summary
           </Button>
         </div>
       </div>

@@ -2,6 +2,7 @@ import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { format } from "date-fns"
 import { UI_CONFIG } from "@/lib/config"
+import { formatEastern } from '@/lib/date-utils'
 
 /**
  * Combines multiple class names into a single string using clsx and tailwind-merge
@@ -39,26 +40,19 @@ export function formatDate(
     
     // Handle predefined format types
     if (formatType === 'date') {
-      return date.toLocaleDateString('en-US', {
-        month: '2-digit',
-        day: '2-digit',
-        year: 'numeric'
-      })
+      return formatEastern(date, 'MM/dd/yyyy')
     }
     
     if (formatType === 'time') {
-      return date.toLocaleTimeString('en-US', {
-        hour: '2-digit',
-        minute: '2-digit'
-      })
+      return formatEastern(date, 'HH:mm')
     }
     
     if (formatType === 'datetime') {
-      return `${formatDate(dateString, 'date')} ${formatDate(dateString, 'time')}`
+      return formatEastern(date, 'MM/dd/yyyy HH:mm')
     }
     
     // Use date-fns for custom format strings
-    return format(date, formatType || UI_CONFIG?.DATE_FORMAT || 'PPP')
+    return formatEastern(date, formatType || UI_CONFIG?.DATE_FORMAT || 'PPP')
   } catch (error) {
     console.error("Error formatting date:", error)
     return "Invalid date"

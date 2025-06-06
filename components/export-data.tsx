@@ -14,13 +14,29 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 
+interface FieldSelection {
+  date: boolean;
+  staff_name: boolean;
+  product_name: boolean;
+  quantity: boolean;
+  shift: boolean;
+  expiration_date?: boolean;
+  reason?: boolean;
+  notes?: boolean;
+}
+
+interface SelectedFields {
+  production: FieldSelection;
+  disposal: FieldSelection;
+}
+
 export function ExportData() {
   const { productionEntries, disposalEntries, products } = useData()
   const [exportType, setExportType] = useState("csv")
   const [dateRange, setDateRange] = useState("all")
   const [exportStatus, setExportStatus] = useState<"idle" | "processing" | "success" | "error">("idle")
   const [progress, setProgress] = useState(0)
-  const [selectedFields, setSelectedFields] = useState({
+  const [selectedFields, setSelectedFields] = useState<SelectedFields>({
     production: {
       date: true,
       staff_name: true,
@@ -40,17 +56,17 @@ export function ExportData() {
     },
   })
 
-  const handleFieldToggle = (category: "production" | "disposal", field: string) => {
+  const handleFieldToggle = (category: keyof SelectedFields, field: keyof FieldSelection) => {
     setSelectedFields((prev) => ({
       ...prev,
       [category]: {
         ...prev[category],
-        [field]: !prev[category][field as keyof (typeof prev)[category]],
+        [field]: !prev[category][field],
       },
     }))
   }
 
-  const exportData = async (dataType: "production" | "disposal") => {
+  const exportData = async (dataType: keyof SelectedFields) => {
     const entries = dataType === "production" ? productionEntries : disposalEntries
 
     setExportStatus("processing")
@@ -74,7 +90,7 @@ export function ExportData() {
         const firstDayOfLastMonth = startOfMonth(subDays(startOfMonth(today), 1))
         const lastDayOfLastMonth = endOfMonth(firstDayOfLastMonth)
         filteredEntries = entries.filter((entry) => {
-          const entryDate = parseISO(entry.date)
+          const entryDate = typeof entry.date === 'string' ? parseISO(entry.date) : entry.date
           return entryDate >= firstDayOfLastMonth && entryDate <= lastDayOfLastMonth
         })
       }
@@ -87,8 +103,16 @@ export function ExportData() {
         const mappedEntry: Record<string, any> = {}
 
         Object.keys(fields).forEach((field) => {
-          if (fields[field as keyof typeof fields]) {
-            mappedEntry[field] = entry[field as keyof typeof entry]
+          if (fields[field as keyof FieldSelection]) {
+            // Format dates properly
+            if (field === 'date' || field === 'expiration_date') {
+              const dateValue = entry[field as keyof typeof entry]
+              mappedEntry[field] = dateValue 
+                ? format(new Date(dateValue as string | Date), "yyyy-MM-dd")
+                : ""
+            } else {
+              mappedEntry[field] = entry[field as keyof typeof entry]
+            }
           }
         })
 
@@ -197,30 +221,30 @@ Generated on: ${format(new Date(), "MMMM dd, yyyy")}
       ).toFixed(1)}%
 
 ## Top Products by Production
-${productionEntries
-  .reduce(
+${Object.entries(
+  productionEntries.reduce(
     (acc, entry) => {
       acc[entry.product_name] = (acc[entry.product_name] || 0) + entry.quantity
       return acc
     },
     {} as Record<string, number>,
   )
-  .entries()
+)
   .sort((a, b) => b[1] - a[1])
   .slice(0, 5)
   .map((entry, index) => `${index + 1}. ${entry[0]}: ${entry[1]} units`)
   .join("\n")}
 
 ## Top Disposal Reasons
-${disposalEntries
-  .reduce(
+${Object.entries(
+  disposalEntries.reduce(
     (acc, entry) => {
       acc[entry.reason] = (acc[entry.reason] || 0) + entry.quantity
       return acc
     },
     {} as Record<string, number>,
   )
-  .entries()
+)
   .sort((a, b) => b[1] - a[1])
   .slice(0, 5)
   .map((entry, index) => `${index + 1}. ${entry[0]}: ${entry[1]} units`)
@@ -241,7 +265,7 @@ ${disposalEntries
       setTimeout(() => {
         setExportStatus("idle")
         setProgress(0)
-      }, 2000)
+      }, 3000)
     }, 2000)
   }
 
@@ -335,7 +359,7 @@ ${disposalEntries
                     <Checkbox
                       id={`production-${field}`}
                       checked={selectedFields.production[field as keyof typeof selectedFields.production]}
-                      onCheckedChange={() => handleFieldToggle("production", field)}
+                      onCheckedChange={() => handleFieldToggle("production", field as keyof FieldSelection)}
                     />
                     <Label htmlFor={`production-${field}`} className="capitalize">
                       {field.replace("_", " ")}
@@ -414,7 +438,7 @@ ${disposalEntries
                     <Checkbox
                       id={`disposal-${field}`}
                       checked={selectedFields.disposal[field as keyof typeof selectedFields.disposal]}
-                      onCheckedChange={() => handleFieldToggle("disposal", field)}
+                      onCheckedChange={() => handleFieldToggle("disposal", field as keyof FieldSelection)}
                     />
                     <Label htmlFor={`disposal-${field}`} className="capitalize">
                       {field.replace("_", " ")}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ProductionForm } from "@/components/production-form"
 import { useData } from "@/components/providers/data-provider"
@@ -21,6 +21,7 @@ import { EntriesListView } from "@/components/entries-list-view"
 import { CopyrightFooter } from "@/components/copyright-footer"
 import { QuickNav } from "@/components/quick-nav"
 import { isSameDay, isWithinInterval } from "date-fns"
+import { toEastern } from '@/lib/date-utils'
 
 // Custom tooltip component
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -43,47 +44,52 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 // Helper function to get date range for predefined periods
 const getDateRangeForPeriod = (period: string): DateRange => {
-  const today = new Date()
-  today.setHours(23, 59, 59, 999)
+  const now = new Date();
+  const today = toEastern(now);
   
-  const startDate = new Date()
-  startDate.setHours(0, 0, 0, 0)
+  // For today's date, we want to ensure we're using the current date in Eastern time
+  const startDate = new Date(today);
+  startDate.setHours(0, 0, 0, 0);
+  
+  const endDate = new Date(today);
+  endDate.setHours(23, 59, 59, 999);
   
   switch(period) {
     case "today":
-      return { from: startDate, to: today }
+      return { from: startDate, to: endDate };
     case "week":
-      const weekStart = new Date(startDate)
-      const day = weekStart.getDay()
-      const diff = weekStart.getDate() - day + (day === 0 ? -6 : 1)
-      weekStart.setDate(diff)
-      return { from: weekStart, to: today }
+      const weekStart = new Date(startDate);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+      return { from: weekStart, to: endDate };
     case "month":
-      const monthStart = new Date(startDate)
-      monthStart.setDate(1)
-      return { from: monthStart, to: today }
+      const monthStart = new Date(startDate);
+      monthStart.setDate(1);
+      return { from: monthStart, to: endDate };
     case "three_months":
-      const threeMonthsStart = new Date(startDate)
-      threeMonthsStart.setMonth(threeMonthsStart.getMonth() - 3)
-      threeMonthsStart.setDate(1)
-      return { from: threeMonthsStart, to: today }
+      const threeMonthsStart = new Date(startDate);
+      threeMonthsStart.setMonth(threeMonthsStart.getMonth() - 3);
+      return { from: threeMonthsStart, to: endDate };
     case "quarter":
-      const quarterStart = new Date(startDate)
-      const currentQuarter = Math.floor(quarterStart.getMonth() / 3)
-      quarterStart.setMonth(currentQuarter * 3)
-      quarterStart.setDate(1)
-      return { from: quarterStart, to: today }
+      const quarterStart = new Date(startDate);
+      const currentQuarter = Math.floor(quarterStart.getMonth() / 3);
+      quarterStart.setMonth(currentQuarter * 3);
+      quarterStart.setDate(1);
+      return { from: quarterStart, to: endDate };
     case "year":
-      const yearStart = new Date(startDate)
-      yearStart.setMonth(0)
-      yearStart.setDate(1)
-      return { from: yearStart, to: today }
+      const yearStart = new Date(startDate);
+      yearStart.setMonth(0);
+      yearStart.setDate(1);
+      return { from: yearStart, to: endDate };
     case "all":
-      return { from: undefined, to: undefined }
+      const allTimeStart = new Date(startDate);
+      allTimeStart.setFullYear(allTimeStart.getFullYear() - 5);
+      allTimeStart.setMonth(0);
+      allTimeStart.setDate(1);
+      return { from: allTimeStart, to: endDate };
     default:
-      return { from: startDate, to: today }
+      return { from: startDate, to: endDate };
   }
-}
+};
 
 // Add these helper functions at the top of the file, after the imports
 const getDaysInMonth = (year: number, month: number): number => {
@@ -111,68 +117,69 @@ export default function ProductionPage() {
   const [showAllEntries, setShowAllEntries] = useState(false)
   const { toast } = useToast()
   const [activeView, setActiveView] = useState("all")
+  const [tempDateRange, setTempDateRange] = useState<DateRange | undefined>({
+    from: subDays(new Date(), 30),
+    to: new Date()
+  });
   
   // Set mounted state after initial render
   useEffect(() => {
     setMounted(true)
   }, [])
   
-  // Filter entries based on search term, product, and date range
-  const filteredEntries = productionEntries.filter(entry => {
-    const matchesSearch = 
-      (entry.product_name ? entry.product_name.toLowerCase() : '').includes(searchTerm.toLowerCase()) ||
-      (entry.staff_name ? entry.staff_name.toLowerCase() : '').includes(searchTerm.toLowerCase());
-    
-    const matchesProduct = selectedProduct === "all" || entry.product_name === selectedProduct
-    
-    const entryDate = new Date(entry.date)
-    if (isNaN(entryDate.getTime())) return false
-    
-    // If activeView is "all" or no date range is selected, only apply search and product filters
-    if (activeView === "all" || !dateRange?.from) {
-      return matchesSearch && matchesProduct
-    }
-    
-    // Set time to start of day for entry date
-    entryDate.setHours(0, 0, 0, 0)
-    
-    // If only from date is selected, treat it as a single day filter
-    if (!dateRange.to) {
-      const singleDay = new Date(dateRange.from)
-      singleDay.setHours(0, 0, 0, 0)
-      return isSameDay(entryDate, singleDay) && matchesSearch && matchesProduct
-    }
-    
-    // For date range, set proper start and end times
-    const startDate = new Date(dateRange.from)
-    startDate.setHours(0, 0, 0, 0)
-    const endDate = new Date(dateRange.to)
-    endDate.setHours(23, 59, 59, 999)
-    
-    // Check if entry date falls within the range
-    const isInDateRange = isWithinInterval(entryDate, {
-      start: startDate,
-      end: endDate
-    })
-    
-    return isInDateRange && matchesSearch && matchesProduct
-  })
+  // Update the filtering logic
+  const filteredProductionEntries = useMemo(() => {
+    return productionEntries.filter(entry => {
+      // Apply search filter
+      const matchesSearch = searchTerm === "" || 
+        entry.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        entry.shift?.toLowerCase().includes(searchTerm.toLowerCase());
+
+      // Apply product filter
+      const matchesProduct = selectedProduct === "all" || entry.product_name === selectedProduct;
+
+      // Apply date filter
+      if (!dateRange?.from) return matchesSearch && matchesProduct;
+
+      // Convert entry date to Eastern timezone
+      const entryDate = toEastern(new Date(entry.date));
+      if (isNaN(entryDate.getTime())) return false;
+
+      // For today's date, we want to compare just the date part
+      const entryDateOnly = new Date(entryDate);
+      entryDateOnly.setHours(0, 0, 0, 0);
+
+      const startDate = new Date(dateRange.from);
+      startDate.setHours(0, 0, 0, 0);
+
+      const endDate = dateRange.to ? new Date(dateRange.to) : startDate;
+      endDate.setHours(23, 59, 59, 999);
+
+      // Check if entry date falls within the range
+      const isInDateRange = isWithinInterval(entryDateOnly, {
+        start: startDate,
+        end: endDate
+      });
+
+      return matchesSearch && matchesProduct && isInDateRange;
+    });
+  }, [productionEntries, dateRange, searchTerm, selectedProduct]);
   
   // Sort entries by date
-  const sortedEntries = [...filteredEntries].sort((a, b) => {
+  const sortedEntries = [...filteredProductionEntries].sort((a, b) => {
     const dateA = new Date(a.date).getTime()
     const dateB = new Date(b.date).getTime()
     return sortOrder === "desc" ? dateB - dateA : dateA - dateB
   })
   
   // Calculate production statistics
-  const totalProduction = filteredEntries.reduce((sum, entry) => sum + entry.quantity, 0)
+  const totalProduction = filteredProductionEntries.reduce((sum, entry) => sum + entry.quantity, 0)
   
   // Get unique products count
-  const uniqueProducts = new Set(filteredEntries.map(entry => entry.product_name)).size
+  const uniqueProducts = new Set(filteredProductionEntries.map(entry => entry.product_name)).size
   
   // Group production by date
-  const productionByDate = filteredEntries.reduce((acc, entry) => {
+  const productionByDate = filteredProductionEntries.reduce((acc, entry) => {
     const date = format(new Date(entry.date), "MMM dd")
     if (!acc[date]) {
       acc[date] = 0
@@ -188,7 +195,7 @@ export default function ProductionPage() {
   }))
   
   // Calculate shift distribution
-  const shiftDistribution = filteredEntries.reduce((acc, entry) => {
+  const shiftDistribution = filteredProductionEntries.reduce((acc, entry) => {
     const shift = entry.shift || 'Unspecified'
     if (!acc[shift]) {
       acc[shift] = 0
@@ -224,7 +231,7 @@ export default function ProductionPage() {
     if (sortedEntries.length === 0) return
     
     // Get headers from first object
-    const headers = ["Product", "Quantity", "Date", "Shift", "Staff"]
+    const headers = ["Product", "Quantity", "Date", "Shift", "Staff", "Expiration Date"]
     
     // Convert data to CSV format
     const csvRows = []
@@ -236,9 +243,10 @@ export default function ProductionPage() {
         entry.quantity,
         format(new Date(entry.date), "yyyy-MM-dd"),
         entry.shift,
-        entry.staff_name
+        entry.staff_name,
+        entry.expiration_date ? format(new Date(entry.expiration_date), "yyyy-MM-dd") : ""
       ]
-      csvRows.push(values.join(','))
+      csvRows.push(values.map(value => typeof value === 'string' && value.includes(',') ? `"${value}"` : value).join(','))
     }
     
     // Create downloadable link
@@ -255,14 +263,14 @@ export default function ProductionPage() {
     
     toast({
       title: "Export Successful",
-      description: `Production data has been exported to CSV`,
+      description: "Production data has been exported to CSV",
     })
   }
   
-  // Add the handlers inside the component
+  // Update the handleFromDateChange function
   const handleFromDateChange = (type: 'year' | 'month' | 'day', value: string) => {
-    const currentDate = dateRange?.from || new Date();
-    const newDate = new Date(currentDate);
+    const currentDate = tempDateRange?.from || new Date();
+    const newDate = toEastern(new Date(currentDate));
     
     switch(type) {
       case 'year':
@@ -276,12 +284,18 @@ export default function ProductionPage() {
         break;
     }
     
-    setDateRange((prev: DateRange | undefined) => prev ? { ...prev, from: newDate } : { from: newDate, to: newDate });
+    // If to date is not set or is the same as from date, update both
+    if (!tempDateRange?.to || isSameDay(newDate, toEastern(new Date(tempDateRange.to)))) {
+      setTempDateRange({ from: newDate, to: newDate });
+    } else {
+      setTempDateRange((prev: DateRange | undefined) => prev ? { ...prev, from: newDate } : { from: newDate, to: newDate });
+    }
   };
 
+  // Update the handleToDateChange function
   const handleToDateChange = (type: 'year' | 'month' | 'day', value: string) => {
-    const currentDate = dateRange?.to || new Date();
-    const newDate = new Date(currentDate);
+    const currentDate = tempDateRange?.to || new Date();
+    const newDate = toEastern(new Date(currentDate));
     
     switch(type) {
       case 'year':
@@ -295,7 +309,39 @@ export default function ProductionPage() {
         break;
     }
     
-    setDateRange((prev: DateRange | undefined) => prev ? { ...prev, to: newDate } : { from: newDate, to: newDate });
+    // If from date is not set, set it to the same date
+    if (!tempDateRange?.from) {
+      setTempDateRange({ from: newDate, to: newDate });
+    } else {
+      setTempDateRange((prev: DateRange | undefined) => prev ? { ...prev, to: newDate } : { from: newDate, to: newDate });
+    }
+  };
+
+  // Update the handleSubmit function
+  const handleSubmit = () => {
+    if (tempDateRange?.from) {
+      const fromDate = new Date(tempDateRange.from);
+      fromDate.setHours(0, 0, 0, 0);
+      
+      const toDate = tempDateRange.to ? new Date(tempDateRange.to) : fromDate;
+      toDate.setHours(23, 59, 59, 999);
+      
+      setDateRange({ from: fromDate, to: toDate });
+    }
+  };
+
+  // Update the handleClear function
+  const handleClear = () => {
+    const now = new Date();
+    const today = toEastern(now);
+    today.setHours(23, 59, 59, 999);
+    
+    const startDate = new Date(2010, 0, 1); // January 1, 2010
+    startDate.setHours(0, 0, 0, 0);
+    
+    setTempDateRange({ from: startDate, to: today });
+    setDateRange({ from: startDate, to: today });
+    setActiveView("all");
   };
   
   if (!mounted) {
@@ -541,7 +587,7 @@ export default function ProductionPage() {
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">From:</span>
                   <Select
-                    value={dateRange?.from ? dateRange.from.getFullYear().toString() : "2010"}
+                    value={tempDateRange?.from ? tempDateRange.from.getFullYear().toString() : "2010"}
                     onValueChange={(year) => handleFromDateChange('year', year)}
                   >
                     <SelectTrigger className="w-[100px]">
@@ -557,7 +603,7 @@ export default function ProductionPage() {
                   </Select>
 
                   <Select
-                    value={dateRange?.from ? dateRange.from.getMonth().toString() : new Date().getMonth().toString()}
+                    value={tempDateRange?.from ? tempDateRange.from.getMonth().toString() : new Date().getMonth().toString()}
                     onValueChange={(month) => handleFromDateChange('month', month)}
                   >
                     <SelectTrigger className="w-[120px]">
@@ -576,7 +622,7 @@ export default function ProductionPage() {
                   </Select>
 
                   <Select
-                    value={dateRange?.from ? dateRange.from.getDate().toString() : new Date().getDate().toString()}
+                    value={tempDateRange?.from ? tempDateRange.from.getDate().toString() : new Date().getDate().toString()}
                     onValueChange={(day) => handleFromDateChange('day', day)}
                   >
                     <SelectTrigger className="w-[80px]">
@@ -585,8 +631,8 @@ export default function ProductionPage() {
                     <SelectContent>
                       {Array.from(
                         { length: getDaysInMonth(
-                          dateRange?.from ? dateRange.from.getFullYear() : new Date().getFullYear(),
-                          dateRange?.from ? dateRange.from.getMonth() : new Date().getMonth()
+                          tempDateRange?.from ? tempDateRange.from.getFullYear() : new Date().getFullYear(),
+                          tempDateRange?.from ? tempDateRange.from.getMonth() : new Date().getMonth()
                         )},
                         (_, i) => i + 1
                       ).map((day) => (
@@ -601,7 +647,7 @@ export default function ProductionPage() {
                 <div className="flex items-center gap-2">
                   <span className="text-sm font-medium">Till:</span>
                   <Select
-                    value={dateRange?.to ? dateRange.to.getFullYear().toString() : new Date().getFullYear().toString()}
+                    value={tempDateRange?.to ? tempDateRange.to.getFullYear().toString() : new Date().getFullYear().toString()}
                     onValueChange={(year) => handleToDateChange('year', year)}
                   >
                     <SelectTrigger className="w-[100px]">
@@ -617,7 +663,7 @@ export default function ProductionPage() {
                   </Select>
 
                   <Select
-                    value={dateRange?.to ? dateRange.to.getMonth().toString() : new Date().getMonth().toString()}
+                    value={tempDateRange?.to ? tempDateRange.to.getMonth().toString() : new Date().getMonth().toString()}
                     onValueChange={(month) => handleToDateChange('month', month)}
                   >
                     <SelectTrigger className="w-[120px]">
@@ -636,7 +682,7 @@ export default function ProductionPage() {
                   </Select>
 
                   <Select
-                    value={dateRange?.to ? dateRange.to.getDate().toString() : new Date().getDate().toString()}
+                    value={tempDateRange?.to ? tempDateRange.to.getDate().toString() : new Date().getDate().toString()}
                     onValueChange={(day) => handleToDateChange('day', day)}
                   >
                     <SelectTrigger className="w-[80px]">
@@ -645,8 +691,8 @@ export default function ProductionPage() {
                     <SelectContent>
                       {Array.from(
                         { length: getDaysInMonth(
-                          dateRange?.to ? dateRange.to.getFullYear() : new Date().getFullYear(),
-                          dateRange?.to ? dateRange.to.getMonth() : new Date().getMonth()
+                          tempDateRange?.to ? tempDateRange.to.getFullYear() : new Date().getFullYear(),
+                          tempDateRange?.to ? tempDateRange.to.getMonth() : new Date().getMonth()
                         )},
                         (_, i) => i + 1
                       ).map((day) => (
@@ -658,19 +704,24 @@ export default function ProductionPage() {
                   </Select>
                 </div>
 
+                <div className="flex items-center gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => {
-                    const startDate = new Date(2010, 0, 1); // January 1st, 2010
-                    const endDate = new Date();
-                    setDateRange({ from: startDate, to: endDate });
-                    setActiveView("all");
-                  }}
+                    onClick={handleClear}
                   className="h-8"
                 >
                   Clear
                 </Button>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={handleSubmit}
+                    className="h-8"
+                  >
+                    Apply Filter
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
