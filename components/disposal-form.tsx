@@ -304,18 +304,18 @@ export function DisposalForm() {
         }
 
         // Validate date
-        const disposalDate = commonFields.date ? new Date(commonFields.date) : new Date()
-        if (isNaN(disposalDate.getTime())) {
+        const disposalDate = commonFields.date ? new Date(commonFields.date) : null
+        if (!disposalDate || isNaN(disposalDate.getTime())) {
           throw new Error("Invalid disposal date")
         }
 
-        // Create the disposal entry with common fields
+        // Create the disposal entry with common fields and a temporary ID
         const disposalEntry = {
-          id: `temp-${Date.now()}`, // Temporary ID that will be replaced by the backend
+          id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Add temporary ID
           product_id: selectedProductData.id,
           product_name: entry.product_name,
           quantity: quantity,
-          date: disposalDate,
+          date: disposalDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
           shift: commonFields.shift,
           staff_name: commonFields.staff_name,
           reason: entry.reason,
@@ -341,15 +341,24 @@ export function DisposalForm() {
         notes: "",
       })
       setSelectedProduct(null)
-      setSelectedReasons([])
 
-      // Refresh data to update the UI
+      // Initial refresh to update the UI immediately
       await refreshData()
 
       toast({
         title: "Success",
         description: "All entries have been submitted successfully.",
       })
+
+      // Set up automatic refresh after 2 seconds
+      setTimeout(async () => {
+        await refreshData()
+        toast({
+          title: "Refreshed",
+          description: "Data has been refreshed automatically.",
+        })
+      }, 2000)
+
     } catch (error) {
       console.error("Error submitting cart:", error)
       toast({

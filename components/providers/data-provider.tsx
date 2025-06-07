@@ -6,6 +6,7 @@ import { Product, ProductionEntry, DisposalEntry, DataContextType } from "@/lib/
 import { products as mockProducts, generateProductionEntries, generateDisposalEntries, saveProductsToStorage } from "@/lib/mock-data"
 import { USE_MOCK_DATA, API_ENDPOINTS, MOCK_DATA_REFRESH_INTERVAL } from "@/lib/config"
 import { isoStringToDate, dateToISOString, formatDateForDisplay } from "@/lib/date-utils"
+import { v4 as uuidv4 } from "uuid"
 
 // Create context
 const DataContext = createContext<DataContextType | undefined>(undefined)
@@ -170,22 +171,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       if (USE_MOCK_DATA) {
         // Add to mock data
-        const { id, ...entryWithoutId } = entry;
-        
-        // Ensure date is a Date object for mock data using our utility function
-        const dateValue = isoStringToDate(entry.date) || new Date();
-        const expirationDateValue = isoStringToDate(entry.expiration_date) || new Date();
-        
-        const newEntry: ProductionEntry = {
-          id: `mock-${Date.now()}`,
-          ...entryWithoutId,
-          date: dateValue, // Use the properly formatted date
-          expiration_date: expirationDateValue, // Convert expiration_date to Date object
-          notes: entry.notes || ""
+        const newEntry = {
+          ...entry,
+          id: uuidv4(),
+          date: new Date(entry.date),
+          expiration_date: entry.expiration_date
         }
         
-        mockProductionEntries = [newEntry, ...mockProductionEntries]
-        setProductionEntries(prev => [newEntry, ...prev])
+        setProductionEntries((prev) => [...prev, newEntry])
         
         toast({
           title: "Success",
@@ -194,7 +187,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         return newEntry
       } else {
         // Add to real API with string date
-        const { id, ...entryWithoutId } = entry;
+        const { id, ...entryWithoutId } = entry
         
         // For API, we ensure date is properly formatted
         const response = await fetch(API_ENDPOINTS.PRODUCTION, {
@@ -212,13 +205,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           throw new Error("Failed to add production entry")
         }
 
-        // Convert date back to Date object for consistent state using our utility
-        const responseData = await response.json();
+        // Convert date back to Date object for consistent state
+        const responseData = await response.json()
         const newEntry = {
           ...responseData,
-          date: isoStringToDate(responseData.date) || new Date(),
-          expiration_date: isoStringToDate(responseData.expiration_date) || new Date() // Convert expiration_date to Date object
-        };
+          date: new Date(responseData.date),
+          expiration_date: responseData.expiration_date
+        }
         
         setProductionEntries((prev) => [...prev, newEntry])
 
@@ -245,32 +238,13 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     try {
       if (USE_MOCK_DATA) {
         // Add to mock data
-        const { id, ...entryWithoutId } = entry;
-        
-        // Ensure date is a Date object and quantity is a number
-        const dateValue = isoStringToDate(entry.date) || new Date();
-        const quantityValue = Number(entry.quantity);
-        
-        if (isNaN(quantityValue)) {
-          throw new Error("Invalid quantity value");
+        const newEntry = {
+          ...entry,
+          id: uuidv4(),
+          date: new Date(entry.date)
         }
         
-        const newEntry: DisposalEntry = {
-          id: `mock-${Date.now()}`,
-          ...entryWithoutId,
-          date: dateValue,
-          quantity: quantityValue,
-          notes: entry.notes || ""
-        }
-        
-        // Update mock data
-        mockDisposalEntries = [newEntry, ...mockDisposalEntries]
-        
-        // Update state with validated data
-        setDisposalEntries(prev => [newEntry, ...prev])
-        
-        // Trigger a refresh to update all components
-        setTimeout(() => refreshData(), 100)
+        setDisposalEntries((prev) => [...prev, newEntry])
         
         toast({
           title: "Success",
@@ -279,14 +253,9 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         return newEntry
       } else {
         // Add to real API with string date
-        const { id, ...entryWithoutId } = entry;
+        const { id, ...entryWithoutId } = entry
         
-        // Validate quantity before sending to API
-        const quantityValue = Number(entry.quantity);
-        if (isNaN(quantityValue)) {
-          throw new Error("Invalid quantity value");
-        }
-        
+        // For API, we ensure date is properly formatted
         const response = await fetch(API_ENDPOINTS.DISPOSAL, {
           method: 'POST',
           headers: {
@@ -294,7 +263,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           },
           body: JSON.stringify({
             ...entryWithoutId,
-            quantity: quantityValue,
             notes: entry.notes || ""
           }),
         })
@@ -303,19 +271,14 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
           throw new Error("Failed to add disposal entry")
         }
 
-        // Convert date back to Date object and ensure quantity is a number
-        const responseData = await response.json();
+        // Convert date back to Date object for consistent state
+        const responseData = await response.json()
         const newEntry = {
           ...responseData,
-          date: isoStringToDate(responseData.date) || new Date(),
-          quantity: Number(responseData.quantity) || 0
-        };
+          date: new Date(responseData.date)
+        }
         
-        // Update state with validated data
-        setDisposalEntries((prev) => [newEntry, ...prev])
-        
-        // Trigger a refresh to update all components
-        setTimeout(() => refreshData(), 100)
+        setDisposalEntries((prev) => [...prev, newEntry])
 
         toast({
           title: "Success",
@@ -333,7 +296,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
       })
       throw err
     }
-  }, [toast, refreshData])
+  }, [toast])
 
   // Function to add a new product
   const addProduct = useCallback(async (product: Omit<Product, "id">): Promise<Product> => {

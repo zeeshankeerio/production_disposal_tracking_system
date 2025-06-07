@@ -265,10 +265,10 @@ export function ProductionForm() {
           product_id: selectedProductData.id,
           product_name: entry.product_name,
           quantity: entry.quantity,
-          date: productionDate,
+          date: productionDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
           shift: commonFields.shift,
           staff_name: commonFields.staff_name,
-          expiration_date: expirationDate.toISOString().split('T')[0], // Convert to YYYY-MM-DD string
+          expiration_date: expirationDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
           notes: entry.notes || "",
         }
 

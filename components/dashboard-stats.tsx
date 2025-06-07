@@ -36,14 +36,21 @@ export function DashboardStats({ productionEntries, disposalEntries, dateFrom, d
     const effectiveStart = dateFrom || subDays(now, 7) // Default to last 7 days if dateFrom is not provided
     const effectiveEnd = dateTo || now
 
+    // Set time to start of day for start date and end of day for end date
+    const startDate = new Date(effectiveStart);
+    startDate.setHours(0, 0, 0, 0);
+
+    const endDate = new Date(effectiveEnd);
+    endDate.setHours(23, 59, 59, 999);
+
     const filtered = {
       production: productionEntries.filter(entry => {
         const entryDate = new Date(entry.date)
-        return isWithinInterval(entryDate, { start: effectiveStart, end: effectiveEnd })
+        return entryDate >= startDate && entryDate <= endDate
       }),
       disposal: disposalEntries.filter(entry => {
         const entryDate = new Date(entry.date)
-        return isWithinInterval(entryDate, { start: effectiveStart, end: effectiveEnd })
+        return entryDate >= startDate && entryDate <= endDate
       })
     }
     return filtered

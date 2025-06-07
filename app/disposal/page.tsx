@@ -120,12 +120,28 @@ export default function DisposalPage() {
   const [tempDateRange, setTempDateRange] = useState<DateRange | undefined>({
     from: subDays(new Date(), 30),
     to: new Date()
-  });
+  })
+  const [lastEntryCount, setLastEntryCount] = useState(disposalEntries.length)
   
   // Set mounted state after initial render
   useEffect(() => {
     setMounted(true)
   }, [])
+  
+  // Effect to detect new entries and trigger refresh
+  useEffect(() => {
+    if (disposalEntries.length > lastEntryCount) {
+      // New entry was added, trigger refresh after 2 seconds
+      const timer = setTimeout(() => {
+        handleRefresh()
+      }, 2000)
+      
+      // Update the last entry count
+      setLastEntryCount(disposalEntries.length)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [disposalEntries.length])
   
   // Update the filtering logic
   const filteredDisposalEntries = useMemo(() => {

@@ -80,7 +80,26 @@ export function Dashboard() {
 
   // Filter data by date range
   const filteredProduction = useMemo(() => {
-    if (!dateRange.from || !dateRange.to || !productionEntries.length) return [];
+    // Check if entries array exists and has items
+    if (!productionEntries?.length) return [];
+    // Check if date range is valid
+    if (!dateRange?.from || !dateRange?.to) return [];
+
+    // After null checks, we can safely assert these are Date objects
+    const from = dateRange.from as Date;
+    const to = dateRange.to as Date;
+
+    // Create date-only objects for range boundaries
+    const startDate = new Date(
+      from.getFullYear(),
+      from.getMonth(),
+      from.getDate()
+    );
+    const endDate = new Date(
+      to.getFullYear(),
+      to.getMonth(),
+      to.getDate()
+    );
 
     return productionEntries.filter((entry) => {
       // 1. Capture potentially undefined value
@@ -96,16 +115,39 @@ export function Dashboard() {
         console.warn("Invalid production date:", rawDate);
         return false;
       }
+
+      // 4. Compare only the date parts (year, month, day)
+      const entryDate = new Date(
+        safeDate.getFullYear(),
+        safeDate.getMonth(),
+        safeDate.getDate()
+      );
       
-      return isWithinInterval(safeDate, {
-        start: dateRange.from as Date,
-        end: dateRange.to as Date,
-      })
+      return entryDate >= startDate && entryDate <= endDate;
     })
   }, [productionEntries, dateRange])
 
   const filteredDisposal = useMemo(() => {
-    if (!dateRange.from || !dateRange.to || !disposalEntries.length) return [];
+    // Check if entries array exists and has items
+    if (!disposalEntries?.length) return [];
+    // Check if date range is valid
+    if (!dateRange?.from || !dateRange?.to) return [];
+
+    // After null checks, we can safely assert these are Date objects
+    const from = dateRange.from as Date;
+    const to = dateRange.to as Date;
+
+    // Create date-only objects for range boundaries
+    const startDate = new Date(
+      from.getFullYear(),
+      from.getMonth(),
+      from.getDate()
+    );
+    const endDate = new Date(
+      to.getFullYear(),
+      to.getMonth(),
+      to.getDate()
+    );
 
     return disposalEntries.filter((entry) => {
       // 1. Capture potentially undefined value
@@ -121,11 +163,15 @@ export function Dashboard() {
         console.warn("Invalid disposal date:", rawDate);
         return false;
       }
+
+      // 4. Compare only the date parts (year, month, day)
+      const entryDate = new Date(
+        safeDate.getFullYear(),
+        safeDate.getMonth(),
+        safeDate.getDate()
+      );
       
-      return isWithinInterval(safeDate, {
-        start: dateRange.from as Date,
-        end: dateRange.to as Date,
-      })
+      return entryDate >= startDate && entryDate <= endDate;
     })
   }, [disposalEntries, dateRange])
 
@@ -146,116 +192,136 @@ export function Dashboard() {
       disposalTrend: 0,
     };
 
-    if (!filteredProduction.length && !filteredDisposal.length) {
+    // Check if we have any entries to process
+    if (!filteredProduction?.length && !filteredDisposal?.length) {
       return defaultMetrics;
     }
 
     // Total production and disposal
-    const totalProduction = filteredProduction.reduce((sum, entry) => sum + entry.quantity, 0)
-    const totalDisposal = filteredDisposal.reduce((sum, entry) => sum + entry.quantity, 0)
+    const totalProduction = filteredProduction?.reduce((sum, entry) => sum + (entry?.quantity || 0), 0) || 0;
+    const totalDisposal = filteredDisposal?.reduce((sum, entry) => sum + (entry?.quantity || 0), 0) || 0;
 
     // Disposal rate
-    const disposalRate = totalProduction > 0 ? (totalDisposal / totalProduction) * 100 : 0
+    const disposalRate = totalProduction > 0 ? (totalDisposal / totalProduction) * 100 : 0;
 
     // Production by product
-    const productionByProduct = filteredProduction.reduce(
+    const productionByProduct = filteredProduction?.reduce(
       (acc, entry) => {
-        acc[entry.product_name] = (acc[entry.product_name] || 0) + entry.quantity
-        return acc
+        if (entry?.product_name) {
+          acc[entry.product_name] = (acc[entry.product_name] || 0) + (entry.quantity || 0);
+        }
+        return acc;
       },
-      {} as Record<string, number>,
-    )
+      {} as Record<string, number>
+    ) || {};
 
     // Disposal by reason
-    const disposalByReason = filteredDisposal.reduce(
+    const disposalByReason = filteredDisposal?.reduce(
       (acc, entry) => {
-        // Extract just the English part of the reason (before the slash)
-        const reasonParts = entry.reason.split("/")
-        const reason = reasonParts[0].trim()
-        acc[reason] = (acc[reason] || 0) + entry.quantity
-        return acc
+        if (entry?.reason) {
+          // Extract just the English part of the reason (before the slash)
+          const reasonParts = entry.reason.split("/");
+          const reason = reasonParts[0].trim();
+          acc[reason] = (acc[reason] || 0) + (entry.quantity || 0);
+        }
+        return acc;
       },
-      {} as Record<string, number>,
-    )
+      {} as Record<string, number>
+    ) || {};
 
     // Production by shift
-    const productionByShift = filteredProduction.reduce(
+    const productionByShift = filteredProduction?.reduce(
       (acc, entry) => {
-        acc[entry.shift] = (acc[entry.shift] || 0) + entry.quantity
-        return acc
+        if (entry?.shift) {
+          acc[entry.shift] = (acc[entry.shift] || 0) + (entry.quantity || 0);
+        }
+        return acc;
       },
-      {} as Record<string, number>,
-    )
+      {} as Record<string, number>
+    ) || {};
 
     // Disposal by shift
-    const disposalByShift = filteredDisposal.reduce(
+    const disposalByShift = filteredDisposal?.reduce(
       (acc, entry) => {
-        acc[entry.shift] = (acc[entry.shift] || 0) + entry.quantity
-        return acc
+        if (entry?.shift) {
+          acc[entry.shift] = (acc[entry.shift] || 0) + (entry.quantity || 0);
+        }
+        return acc;
       },
-      {} as Record<string, number>,
-    )
+      {} as Record<string, number>
+    ) || {};
 
     // Production by day
-    const productionByDay = filteredProduction.reduce(
+    const productionByDay = filteredProduction?.reduce(
       (acc, entry) => {
-        const dateStr = typeof entry.date === 'string' ? entry.date : format(entry.date, "yyyy-MM-dd")
-        acc[dateStr] = (acc[dateStr] || 0) + entry.quantity
-        return acc
+        if (entry?.date) {
+          const date = new Date(entry.date);
+          const dateStr = format(date, "yyyy-MM-dd");
+          acc[dateStr] = (acc[dateStr] || 0) + (entry.quantity || 0);
+        }
+        return acc;
       },
-      {} as Record<string, number>,
-    )
+      {} as Record<string, number>
+    ) || {};
 
     // Disposal by day
-    const disposalByDay = filteredDisposal.reduce(
+    const disposalByDay = filteredDisposal?.reduce(
       (acc, entry) => {
-        const dateStr = typeof entry.date === 'string' ? entry.date : format(entry.date, "yyyy-MM-dd")
-        acc[dateStr] = (acc[dateStr] || 0) + entry.quantity
-        return acc
+        if (entry?.date) {
+          const date = new Date(entry.date);
+          const dateStr = format(date, "yyyy-MM-dd");
+          acc[dateStr] = (acc[dateStr] || 0) + (entry.quantity || 0);
+        }
+        return acc;
       },
-      {} as Record<string, number>,
-    )
+      {} as Record<string, number>
+    ) || {};
 
     // Trend analysis (compare last 7 days with previous 7 days)
-    const today = new Date()
-    const last7Days = subDays(today, 7)
-    const previous7Days = subDays(last7Days, 7)
+    const today = new Date();
+    const last7Days = subDays(today, 7);
+    const previous7Days = subDays(last7Days, 7);
 
-    const last7DaysProduction = filteredProduction
-      .filter((entry) => {
-        const entryDate = typeof entry.date === 'string' ? parseISO(entry.date) : entry.date
-        return isWithinInterval(entryDate, { start: last7Days, end: today })
-      })
-      .reduce((sum, entry) => sum + entry.quantity, 0)
+    // Create date-only objects for comparison
+    const todayDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const last7DaysDate = new Date(last7Days.getFullYear(), last7Days.getMonth(), last7Days.getDate());
+    const previous7DaysDate = new Date(previous7Days.getFullYear(), previous7Days.getMonth(), previous7Days.getDate());
 
-    const previous7DaysProduction = filteredProduction
-      .filter((entry) => {
-        const entryDate = typeof entry.date === 'string' ? parseISO(entry.date) : entry.date
-        return isWithinInterval(entryDate, { start: previous7Days, end: last7Days })
-      })
-      .reduce((sum, entry) => sum + entry.quantity, 0)
+    const last7DaysProduction = filteredProduction?.filter((entry) => {
+      if (!entry?.date) return false;
+      const entryDate = new Date(entry.date);
+      const entryDateOnly = new Date(entryDate.getFullYear(), entryDate.getMonth(), entryDate.getDate());
+      return entryDateOnly >= last7DaysDate && entryDateOnly <= todayDate;
+    }).reduce((sum, entry) => sum + (entry?.quantity || 0), 0) || 0;
+
+    const previous7DaysProduction = filteredProduction?.filter((entry) => {
+      if (!entry?.date) return false;
+      const entryDate = new Date(entry.date);
+      const entryDateOnly = new Date(entryDate.getFullYear(), entryDate.getMonth(), entryDate.getDate());
+      return entryDateOnly >= previous7DaysDate && entryDateOnly <= last7DaysDate;
+    }).reduce((sum, entry) => sum + (entry?.quantity || 0), 0) || 0;
 
     const productionTrend =
       previous7DaysProduction > 0
         ? ((last7DaysProduction - previous7DaysProduction) / previous7DaysProduction) * 100
-        : 0
+        : 0;
 
-    const last7DaysDisposal = filteredDisposal
-      .filter((entry) => {
-        const entryDate = typeof entry.date === 'string' ? parseISO(entry.date) : entry.date
-        return isWithinInterval(entryDate, { start: last7Days, end: today })
-      })
-      .reduce((sum, entry) => sum + entry.quantity, 0)
+    const last7DaysDisposal = filteredDisposal?.filter((entry) => {
+      if (!entry?.date) return false;
+      const entryDate = new Date(entry.date);
+      const entryDateOnly = new Date(entryDate.getFullYear(), entryDate.getMonth(), entryDate.getDate());
+      return entryDateOnly >= last7DaysDate && entryDateOnly <= todayDate;
+    }).reduce((sum, entry) => sum + (entry?.quantity || 0), 0) || 0;
 
-    const previous7DaysDisposal = filteredDisposal
-      .filter((entry) => {
-        const entryDate = typeof entry.date === 'string' ? parseISO(entry.date) : entry.date
-        return isWithinInterval(entryDate, { start: previous7Days, end: last7Days })
-      })
-      .reduce((sum, entry) => sum + entry.quantity, 0)
+    const previous7DaysDisposal = filteredDisposal?.filter((entry) => {
+      if (!entry?.date) return false;
+      const entryDate = new Date(entry.date);
+      const entryDateOnly = new Date(entryDate.getFullYear(), entryDate.getMonth(), entryDate.getDate());
+      return entryDateOnly >= previous7DaysDate && entryDateOnly <= last7DaysDate;
+    }).reduce((sum, entry) => sum + (entry?.quantity || 0), 0) || 0;
 
     const disposalTrend =
-      previous7DaysDisposal > 0 ? ((last7DaysDisposal - previous7DaysDisposal) / previous7DaysDisposal) * 100 : 0
+      previous7DaysDisposal > 0 ? ((last7DaysDisposal - previous7DaysDisposal) / previous7DaysDisposal) * 100 : 0;
 
     return {
       totalProduction,
