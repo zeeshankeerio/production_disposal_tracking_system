@@ -44,6 +44,7 @@ import { SimpleDatePicker } from "@/components/ui/simple-date-picker"
 import { DatePickerWrapper } from "@/components/ui/date-picker-wrapper"
 import { DatePickerWrapper as ClientDatePicker } from "@/components/ui/client-pickers"
 import { prepareDateForSubmission } from "@/lib/date-utils"
+import { formatShift } from "@/lib/utils"
 
 // Common disposal reasons
 const DISPOSAL_REASONS = [
@@ -143,20 +144,23 @@ export function DisposalForm() {
         const reasons = value.reason ? value.reason.split(", ").filter(Boolean) : []
         setSelectedReasons(reasons)
       }
-      // Update common fields when they change
+      // Update common fields when they change, but avoid circular updates
       if (name === "date" || name === "shift" || name === "staff_name") {
         setCommonFields(prev => ({
           ...prev,
           [name]: value[name]
         }))
-        // Also update the form's staff_name field when commonFields changes
-        if (name === "staff_name") {
-          form.setValue("staff_name", value[name] || "")
-        }
       }
     })
     return () => subscription.unsubscribe()
-  }, [form.watch, form.setValue])
+  }, [form.watch])
+
+  // Add a separate effect to sync staff_name from commonFields to form
+  useEffect(() => {
+    if (commonFields.staff_name !== form.getValues("staff_name")) {
+      form.setValue("staff_name", commonFields.staff_name)
+    }
+  }, [commonFields.staff_name])
 
   const addToCart = (data: DisposalFormValues) => {
     // Validate quantity
@@ -423,9 +427,9 @@ export function DisposalForm() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="morning">Morning</SelectItem>
-                          <SelectItem value="afternoon">Afternoon</SelectItem>
-                          <SelectItem value="night">Night</SelectItem>
+                          <SelectItem value="morning">{formatShift("morning")}</SelectItem>
+                          <SelectItem value="afternoon">{formatShift("afternoon")}</SelectItem>
+                          <SelectItem value="night">{formatShift("night")}</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

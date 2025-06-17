@@ -27,6 +27,15 @@ interface EntryDetailViewProps {
   type: "production" | "disposal"
 }
 
+const formatShift = (shift: string): string => {
+  switch (shift) {
+    case "morning": return "Morning";
+    case "afternoon": return "Afternoon";
+    case "night": return "Night";
+    default: return "Unknown";
+  }
+};
+
 export function EntryDetailView({ entry, type }: EntryDetailViewProps) {
   const [expanded, setExpanded] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -77,7 +86,7 @@ export function EntryDetailView({ entry, type }: EntryDetailViewProps) {
     }
     
     text += `Date: ${formattedDate}\n`
-    text += `Shift: ${entry.shift === "morning" ? "Morning" : entry.shift === "afternoon" ? "Afternoon" : "Night"}\n`
+    text += `Shift: ${formatShift(entry.shift)}\n`
     
     if (isDisposalEntry(entry)) {
       text += `Reason: ${entry.reason}\n`
@@ -152,8 +161,7 @@ export function EntryDetailView({ entry, type }: EntryDetailViewProps) {
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <Badge variant="outline" className="font-normal">
-              {entry.shift === "morning" ? "Morning" : 
-               entry.shift === "afternoon" ? "Afternoon" : "Night"}
+              {formatShift(entry.shift)}
             </Badge>
           </div>
           <div className="flex items-center gap-2 col-span-2">

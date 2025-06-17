@@ -102,11 +102,22 @@ const isValidDate = (year: number, month: number, day: number): boolean => {
          date.getDate() === day;
 };
 
+// Add this helper function at the top of the file
+const formatShift = (shift: string): string => {
+  switch (shift) {
+    case "morning": return "Morning";
+    case "afternoon": return "Afternoon";
+    case "night": return "Night";
+    default: return "Unknown";
+  }
+};
+
 export default function DisposalPage() {
   const { disposalEntries, products, isLoading, refreshData } = useData()
   const [mounted, setMounted] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedProduct, setSelectedProduct] = useState("all")
+  const [selectedCategory, setSelectedCategory] = useState<string>("all")
   const [selectedReason, setSelectedReason] = useState("all")
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(),
@@ -143,6 +154,12 @@ export default function DisposalPage() {
     }
   }, [disposalEntries.length])
   
+  // Get unique categories from products
+  const categories = useMemo(() => {
+    const uniqueCategories = new Set(products.map(p => p.category))
+    return Array.from(uniqueCategories).sort()
+  }, [products])
+  
   // Update the filtering logic
   const filteredDisposalEntries = useMemo(() => {
     if (!disposalEntries || disposalEntries.length === 0) return []
@@ -159,11 +176,15 @@ export default function DisposalPage() {
       // Apply product filter
       const matchesProduct = selectedProduct === "all" || entry.product_name === selectedProduct
 
+      // Apply category filter
+      const matchesCategory = selectedCategory === "all" || 
+        products.find(p => p.name === entry.product_name)?.category === selectedCategory
+
       // Apply reason filter
       const matchesReason = selectedReason === "all" || entry.reason === selectedReason
 
       // Apply date filter
-      if (!dateRange?.from) return matchesSearch && matchesProduct && matchesReason
+      if (!dateRange?.from) return matchesSearch && matchesProduct && matchesCategory && matchesReason
 
       // Convert entry date to Eastern timezone
       const entryDate = toEastern(new Date(entry.date))
@@ -185,9 +206,9 @@ export default function DisposalPage() {
         end: endDate
       })
 
-      return matchesSearch && matchesProduct && matchesReason && isInDateRange
+      return matchesSearch && matchesProduct && matchesCategory && matchesReason && isInDateRange
     })
-  }, [disposalEntries, dateRange, searchTerm, selectedProduct, selectedReason])
+  }, [disposalEntries, dateRange, searchTerm, selectedProduct, selectedCategory, selectedReason, products])
   
   // Sort entries by date
   const sortedEntries = [...filteredDisposalEntries].sort((a, b) => {
@@ -285,45 +306,110 @@ export default function DisposalPage() {
     }, 800)
   }
   
-  // Export data to CSV
+  // Update the export function
   const exportToCSV = () => {
     if (sortedEntries.length === 0) return
     
     // Get headers from first object
-    const headers = ["Product", "Quantity", "Date", "Reason", "Staff", "Shift", "Notes"]
+    const headers = ["Product", "Category", "Quantity", "Date", "Reason", "Staff", "Shift", "Notes"]
     
     // Convert data to CSV format
     const csvRows = []
+    
+    // Add filter information at the top
+    csvRows.push("Export Filters")
+    if (selectedProduct !== "all") {
+      csvRows.push(`Product Filter: ${selectedProduct}`)
+    }
+    if (selectedCategory !== "all") {
+      csvRows.push(`Category Filter: ${selectedCategory}`)
+    }
+    if (selectedReason !== "all") {
+      csvRows.push(`Reason Filter: ${selectedReason}`)
+    }
+    if (dateRange?.from) {
+      csvRows.push(`Date Range: ${format(dateRange.from, "yyyy-MM-dd")} to ${dateRange.to ? format(dateRange.to, "yyyy-MM-dd") : format(dateRange.from, "yyyy-MM-dd")}`)
+    }
+    csvRows.push(`Sort Order: ${sortOrder === "desc" ? "Newest First" : "Oldest First"}`)
+    csvRows.push("") // Empty row for spacing
+    
+    // Add summary information
+    csvRows.push("Summary")
+    csvRows.push(`Total Entries: ${sortedEntries.length}`)
+    csvRows.push(`Total Disposal: ${totalDisposal}`)
+    csvRows.push(`Unique Products: ${uniqueProducts}`)
+    csvRows.push("") // Empty row for spacing
+    
+    // Add shift distribution summary
+    const shiftSummary = new Map<string, number>()
+    sortedEntries.forEach(entry => {
+      const shift = formatShift(entry.shift)
+      shiftSummary.set(shift, (shiftSummary.get(shift) || 0) + entry.quantity)
+    })
+    csvRows.push("Shift Distribution")
+    for (const [shift, quantity] of shiftSummary) {
+      csvRows.push(`${shift}: ${quantity}`)
+    }
+    csvRows.push("") // Empty row for spacing
+    
+    // Add the actual data with headers
     csvRows.push(headers.join(','))
     
     for (const entry of sortedEntries) {
+      // Find the product's category
+      const product = products.find(p => p.name === entry.product_name)
+      const category = product?.category || "Unknown"
+      
       const values = [
         entry.product_name,
+        category,
         entry.quantity,
         format(new Date(entry.date), "yyyy-MM-dd"),
         entry.reason,
         entry.staff_name,
-        entry.shift,
+        formatShift(entry.shift),
         entry.notes || ""
       ]
       csvRows.push(values.map(value => typeof value === 'string' && value.includes(',') ? `"${value}"` : value).join(','))
     }
     
-    // Create downloadable link
-    const csvContent = csvRows.join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    // Create downloadable link with UTF-8 BOM
+    const BOM = '\uFEFF'
+    const csvContent = BOM + csvRows.join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
+    
+    // Add filter information to filename if filters are applied
+    let filename = 'disposal-data'
+    if (selectedCategory !== "all") {
+      filename += `-${selectedCategory.toLowerCase().replace(/\s+/g, '-')}`
+    }
+    if (selectedProduct !== "all") {
+      filename += `-${selectedProduct.toLowerCase().replace(/\s+/g, '-')}`
+    }
+    if (selectedReason !== "all") {
+      filename += `-${selectedReason.toLowerCase().replace(/\s+/g, '-')}`
+    }
+    if (dateRange?.from) {
+      filename += `-${format(dateRange.from, "yyyy-MM-dd")}`
+      if (dateRange.to && !isSameDay(dateRange.from, dateRange.to)) {
+        filename += `-to-${format(dateRange.to, "yyyy-MM-dd")}`
+      }
+    }
+    filename += `.csv`
+    
     link.setAttribute('href', url)
-    link.setAttribute('download', `disposal-data-${format(new Date(), "yyyy-MM-dd")}.csv`)
+    link.setAttribute('download', filename)
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    URL.revokeObjectURL(url)
     
     toast({
       title: "Export Successful",
-      description: "Disposal data has been exported to CSV",
+      description: `Exported ${sortedEntries.length} filtered disposal entries to CSV`,
     })
   }
   
@@ -460,8 +546,26 @@ export default function DisposalPage() {
       
       <QuickNav />
       
-      {/* Add date range filter buttons */}
-      <div className="flex flex-wrap gap-2 mb-4">
+      {/* Add category filter before the date range filter buttons */}
+      <div className="flex flex-wrap gap-2 items-center mb-4">
+        <Select
+          value={selectedCategory}
+          onValueChange={setSelectedCategory}
+        >
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Select category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories.map((category) => (
+              <SelectItem key={category} value={category}>
+                {category}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        
+        {/* Existing date range filter buttons */}
         <Button
           variant={activeView === "today" ? "default" : "outline"}
           size="sm"

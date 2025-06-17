@@ -128,7 +128,8 @@ export function NLSearch() {
         productionEntries
           .filter((entry) => new Date(entry.date) >= lastWeekStart)
           .forEach((entry) => {
-            dailyProduction[entry.date] = (dailyProduction[entry.date] || 0) + entry.quantity
+            const dateKey = format(new Date(entry.date), "yyyy-MM-dd")
+            dailyProduction[dateKey] = (dailyProduction[dateKey] || 0) + entry.quantity
           })
 
         const chartData = Object.entries(dailyProduction)
@@ -136,11 +137,7 @@ export function NLSearch() {
             date: format(parseISO(date), "dd/MM"),
             value,
           }))
-          .sort((a, b) => {
-            const dateA = parseISO(a.date)
-            const dateB = parseISO(b.date)
-            return dateA.getTime() - dateB.getTime()
-          })
+          .sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime())
 
         return {
           type: "timeAnalysis",
@@ -190,7 +187,8 @@ export function NLSearch() {
       if (lowerQuery.includes("by day") || lowerQuery.includes("per day") || lowerQuery.includes("daily")) {
         const byDay = productionEntries.reduce(
           (acc, entry) => {
-            acc[entry.date] = (acc[entry.date] || 0) + entry.quantity
+            const dateKey = format(new Date(entry.date), "yyyy-MM-dd")
+            acc[dateKey] = (acc[dateKey] || 0) + entry.quantity
             return acc
           },
           {} as Record<string, number>,
@@ -201,11 +199,7 @@ export function NLSearch() {
             date: format(parseISO(date), "dd/MM"),
             value,
           }))
-          .sort((a, b) => {
-            const dateA = new Date(a.date)
-            const dateB = new Date(b.date)
-            return dateA.getTime() - dateB.getTime()
-          })
+          .sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime())
 
         return {
           type: "timeSeries",
@@ -219,8 +213,8 @@ export function NLSearch() {
       if (lowerQuery.includes("shift")) {
         const byShift = productionEntries.reduce(
           (acc, entry) => {
-            acc[entry.shift === "day" ? "Day Shift" : "Night Shift"] =
-              (acc[entry.shift === "day" ? "Day Shift" : "Night Shift"] || 0) + entry.quantity
+            acc[entry.shift.charAt(0).toUpperCase() + entry.shift.slice(1)] = 
+              (acc[entry.shift.charAt(0).toUpperCase() + entry.shift.slice(1)] || 0) + entry.quantity
             return acc
           },
           {} as Record<string, number>,
@@ -249,7 +243,8 @@ export function NLSearch() {
           // Get production trend by day
           const byDay = productEntries.reduce(
             (acc, entry) => {
-              acc[entry.date] = (acc[entry.date] || 0) + entry.quantity
+              const dateKey = format(new Date(entry.date), "yyyy-MM-dd")
+              acc[dateKey] = (acc[dateKey] || 0) + entry.quantity
               return acc
             },
             {} as Record<string, number>,
@@ -260,11 +255,7 @@ export function NLSearch() {
               date: format(parseISO(date), "dd/MM"),
               value,
             }))
-            .sort((a, b) => {
-              const dateA = new Date(a.date)
-              const dateB = new Date(b.date)
-              return dateA.getTime() - dateB.getTime()
-            })
+            .sort((a, b) => parseISO(a.date).getTime() - parseISO(b.date).getTime())
 
           return {
             type: "productDetail",
@@ -418,34 +409,49 @@ export function NLSearch() {
 
     // Check for comparison queries (day vs night)
     if (lowerQuery.includes("compare") && lowerQuery.includes("shift")) {
-      const dayProduction = productionEntries
-        .filter((entry) => entry.shift === "day")
+      const morningProduction = productionEntries
+        .filter((entry) => entry.shift === "morning")
+        .reduce((sum, entry) => sum + entry.quantity, 0)
+
+      const afternoonProduction = productionEntries
+        .filter((entry) => entry.shift === "afternoon")
         .reduce((sum, entry) => sum + entry.quantity, 0)
 
       const nightProduction = productionEntries
         .filter((entry) => entry.shift === "night")
         .reduce((sum, entry) => sum + entry.quantity, 0)
 
-      const dayDisposal = disposalEntries
-        .filter((entry) => entry.shift === "day")
+      const morningDisposal = disposalEntries
+        .filter((entry) => entry.shift === "morning")
+        .reduce((sum, entry) => sum + entry.quantity, 0)
+
+      const afternoonDisposal = disposalEntries
+        .filter((entry) => entry.shift === "afternoon")
         .reduce((sum, entry) => sum + entry.quantity, 0)
 
       const nightDisposal = disposalEntries
         .filter((entry) => entry.shift === "night")
         .reduce((sum, entry) => sum + entry.quantity, 0)
 
-      const dayRate = dayProduction > 0 ? (dayDisposal / dayProduction) * 100 : 0
+      const morningRate = morningProduction > 0 ? (morningDisposal / morningProduction) * 100 : 0
+      const afternoonRate = afternoonProduction > 0 ? (afternoonDisposal / afternoonProduction) * 100 : 0
       const nightRate = nightProduction > 0 ? (nightDisposal / nightProduction) * 100 : 0
 
       const chartData = [
-        { name: "Day Shift", production: dayProduction, disposal: dayDisposal, rate: dayRate },
+        { name: "Morning Shift", production: morningProduction, disposal: morningDisposal, rate: morningRate },
+        { name: "Afternoon Shift", production: afternoonProduction, disposal: afternoonDisposal, rate: afternoonRate },
         { name: "Night Shift", production: nightProduction, disposal: nightDisposal, rate: nightRate },
       ]
 
+      // Find best and worst performing shifts
+      const shifts = chartData.sort((a, b) => a.rate - b.rate)
+      const bestShift = shifts[0]
+      const worstShift = shifts[shifts.length - 1]
+
       return {
         type: "comparison",
-        title: "Day vs Night Shift Comparison",
-        description: `Day shift has a disposal rate of ${dayRate.toFixed(1)}% compared to night shift's ${nightRate.toFixed(1)}%.`,
+        title: "Shift Performance Comparison",
+        description: `Best performing: ${bestShift.name} (${bestShift.rate.toFixed(1)}% disposal rate), Worst performing: ${worstShift.name} (${worstShift.rate.toFixed(1)}% disposal rate)`,
         chartData,
       }
     }

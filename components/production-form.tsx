@@ -43,7 +43,8 @@ import { Combobox, ComboboxOption } from "@/components/ui/combobox"
 import { SimpleDatePicker } from "@/components/ui/simple-date-picker"
 import { DatePickerWrapper } from "@/components/ui/date-picker-wrapper"
 import { DatePickerWrapper as ClientDatePicker } from "@/components/ui/client-pickers"
-import { prepareDateForSubmission } from "@/lib/date-utils"
+import { prepareDateForSubmission, toEastern, fromEastern } from "@/lib/date-utils"
+import { formatShift } from "@/lib/utils"
 
 const productionSchema = z.object({
   product_name: z.string().min(1, "Product name is required"),
@@ -84,7 +85,7 @@ export function ProductionForm() {
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null)
   const [cartEntries, setCartEntries] = useState<CartEntry[]>([])
   const [commonFields, setCommonFields] = useState<CommonFields>({
-    date: new Date(),
+    date: toEastern(new Date()),
     shift: "morning",
     staff_name: "",
   })
@@ -95,11 +96,11 @@ export function ProductionForm() {
     defaultValues: {
       product_name: "",
       quantity: 0,
-      date: new Date(),
+      date: toEastern(new Date()),
       shift: "morning",
       staff_name: "",
       notes: "",
-      expiration_date: new Date(new Date().setDate(new Date().getDate() + 7)),
+      expiration_date: toEastern(new Date(new Date().setDate(new Date().getDate() + 7))),
     },
   })
 
@@ -156,7 +157,7 @@ export function ProductionForm() {
 
     setCartEntries([...cartEntries, newEntry])
     
-    // Reset only product-specific fields
+    // Reset only product-specific fields while keeping common fields
     form.reset({
       ...form.getValues(),
       product_name: "",
@@ -243,9 +244,9 @@ export function ProductionForm() {
           throw new Error(`Product not found: ${entry.product_name}`)
         }
 
-        // Validate dates
-        const productionDate = commonFields.date ? new Date(commonFields.date) : null
-        const expirationDate = entry.expiration_date ? new Date(entry.expiration_date) : null
+        // Validate dates in EST
+        const productionDate = commonFields.date ? toEastern(new Date(commonFields.date)) : null
+        const expirationDate = entry.expiration_date ? toEastern(new Date(entry.expiration_date)) : null
 
         if (!productionDate || isNaN(productionDate.getTime())) {
           throw new Error("Invalid production date")
@@ -265,10 +266,10 @@ export function ProductionForm() {
           product_id: selectedProductData.id,
           product_name: entry.product_name,
           quantity: entry.quantity,
-          date: productionDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+          date: productionDate, // Keep as Date object in EST
           shift: commonFields.shift,
           staff_name: commonFields.staff_name,
-          expiration_date: expirationDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+          expiration_date: expirationDate.toISOString().split('T')[0], // Convert to YYYY-MM-DD string
           notes: entry.notes || "",
         }
 
@@ -279,17 +280,28 @@ export function ProductionForm() {
       // Wait for all submissions to complete
       await Promise.all(submissionPromises)
 
-      // Clear the cart and reset form
+      // Clear the cart
       setCartEntries([])
+      
+      // Reset all form fields to their default values in EST
       form.reset({
         product_name: "",
         quantity: 0,
-        date: new Date(),
+        date: toEastern(new Date()),
         shift: "morning",
         staff_name: "",
         notes: "",
-        expiration_date: new Date(new Date().setDate(new Date().getDate() + 7)),
+        expiration_date: toEastern(new Date(new Date().setDate(new Date().getDate() + 7))),
       })
+      
+      // Reset common fields in EST
+      setCommonFields({
+        date: toEastern(new Date()),
+        shift: "morning",
+        staff_name: "",
+      })
+      
+      // Clear selected product
       setSelectedProduct(null)
 
       // Refresh data to update the UI
@@ -573,7 +585,7 @@ export function ProductionForm() {
                     <div className="flex-1">
                       <p className="font-medium">{entry.product_name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {entry.quantity} units • Expires: {formattedExpirationDate}
+                        {entry.quantity} units • Shift: {formatShift(commonFields.shift)} • Expires: {formattedExpirationDate}
                       </p>
                       {entry.notes && (
                         <p className="text-sm text-muted-foreground">

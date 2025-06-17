@@ -4,69 +4,69 @@
     "category": "Pães",
     "description": "Pão tradicional francês crocante",
     "unit": "unit",
-    "id": "afd4c392-c7d4-4f04-b867-a4562d746851"
+    "id": "e4f11e5b-bfb0-420d-96f6-b2a4915a08be"
   },
   {
     "name": "Pão de Forma",
     "category": "Pães",
     "description": "Pão de forma macio para sanduíches",
     "unit": "loaf",
-    "id": "ffcec4ad-8746-4b28-9b59-9c08d78c8663"
+    "id": "83738aa1-11c9-4d05-8550-e1a6444dbcd6"
   },
   {
     "name": "Croissant",
     "category": "Confeitaria",
     "description": "Croissant de massa folhada amanteigada",
     "unit": "piece",
-    "id": "372947cc-7b9c-4aa9-a295-4163801ec0b8"
+    "id": "e075d485-9145-4d03-81b4-798dba6eabea"
   },
   {
     "name": "Bolo de Chocolate",
     "category": "Bolos",
     "description": "Bolo macio de chocolate com cobertura",
     "unit": "cake",
-    "id": "1dd604e3-2068-4d04-aeea-b08f82185573"
+    "id": "65f213bb-59f1-4410-b151-7d881296fbb1"
   },
   {
     "name": "Coxinha",
     "category": "Salgados",
     "description": "Salgado de massa de batata recheado com frango",
     "unit": "piece",
-    "id": "71f01f75-27b8-41fb-a745-d95cec33379f"
+    "id": "10da6b23-b9cd-42ff-b44b-44ebd9cd4416"
   },
   {
     "name": "Esfiha",
     "category": "Salgados",
     "description": "Massa recheada com carne temperada",
     "unit": "piece",
-    "id": "14735a27-6528-4600-a198-5df048ca479a"
+    "id": "11c0c045-3cd0-44d0-a119-571ae96dbb20"
   },
   {
     "name": "Bolo de Cenoura",
     "category": "Bolos",
     "description": "Bolo de cenoura com cobertura de chocolate",
     "unit": "cake",
-    "id": "81370d8b-e5b6-4887-b508-f47e9830f133"
+    "id": "e3f97889-78ae-4e31-ac19-94fccdd2af4e"
   },
   {
     "name": "Pão de Queijo",
     "category": "Salgados",
     "description": "Pão de queijo mineiro tradicional",
     "unit": "piece",
-    "id": "9085d2a6-2a9a-48c8-a1e4-19896173d93b"
+    "id": "3d5908d8-93c5-4832-9b60-875af69a66d9"
   },
   {
     "name": "Torta de Limão",
     "category": "Confeitaria",
     "description": "Torta de limão com massa crocante",
     "unit": "piece",
-    "id": "131640ea-4110-4d8d-b196-17c40674c15e"
+    "id": "21777f78-16d2-4fe5-8d9f-dacd9b7e99fe"
   },
   {
     "name": "Brigadeiro",
     "category": "Confeitaria",
     "description": "Doce tradicional de chocolate",
     "unit": "piece",
-    "id": "14f0a003-4d49-493a-addd-258f3e8c8e93"
+    "id": "dd401bc5-5dda-4b39-bc8f-0c5f5cbb0a73"
   }
 ]

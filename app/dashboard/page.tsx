@@ -333,13 +333,13 @@ export default function DashboardPage() {
     csvRows.push("Production by Product")
     csvRows.push("Product,Quantity")
     summaryData.production.productionByProduct.forEach(({ name, value }) => {
-      csvRows.push(`${name},${value}`)
+      csvRows.push(`${name.includes(',') ? `"${name}"` : name},${value}`)
     })
     csvRows.push("")
     csvRows.push("Production by Shift")
     csvRows.push("Shift,Quantity")
     summaryData.production.productionByShift.forEach(({ name, value }) => {
-      csvRows.push(`${name},${value}`)
+      csvRows.push(`${name.includes(',') ? `"${name}"` : name},${value}`)
     })
     csvRows.push("")
 
@@ -350,13 +350,13 @@ export default function DashboardPage() {
     csvRows.push("Disposal by Product")
     csvRows.push("Product,Quantity")
     summaryData.disposal.disposalByProduct.forEach(({ name, value }) => {
-      csvRows.push(`${name},${value}`)
+      csvRows.push(`${name.includes(',') ? `"${name}"` : name},${value}`)
     })
     csvRows.push("")
     csvRows.push("Disposal by Reason")
     csvRows.push("Reason,Quantity")
     summaryData.disposal.disposalByReason.forEach(({ name, value }) => {
-      csvRows.push(`${name},${value}`)
+      csvRows.push(`${name.includes(',') ? `"${name}"` : name},${value}`)
     })
     csvRows.push("")
 
@@ -370,17 +370,19 @@ export default function DashboardPage() {
     csvRows.push(`Disposal Rate: ${disposalRate.toFixed(2)}%`)
     csvRows.push(`Efficiency: ${efficiency.toFixed(2)}%`)
 
-    // Create downloadable link
-    const csvContent = csvRows.join('\n')
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    // Create downloadable link with UTF-8 BOM
+    const BOM = '\uFEFF'
+    const csvContent = BOM + csvRows.join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' })
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.setAttribute('href', url)
-    link.setAttribute('download', `dashboard-summary-${format(new Date(), "yyyy-MM-dd")}.csv`)
+    link.setAttribute('download', `${filename}-${format(new Date(), "yyyy-MM-dd")}.csv`)
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    URL.revokeObjectURL(url)
     
     toast({
       title: "Export Successful",

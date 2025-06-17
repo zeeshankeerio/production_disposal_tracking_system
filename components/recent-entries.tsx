@@ -112,6 +112,16 @@ function EntryActionButtons({ entry, type }: EntryActionButtonsProps) {
   );
 }
 
+// Add this helper function at the top of the file
+const formatShift = (shift: string): string => {
+  switch (shift) {
+    case "morning": return "Morning";
+    case "afternoon": return "Afternoon";
+    case "night": return "Night";
+    default: return "Unknown";
+  }
+};
+
 export function RecentEntries() {
   const { productionEntries, disposalEntries, isLoading, error } = useData()
   const [mounted, setMounted] = useState(false)
@@ -352,8 +362,7 @@ export function RecentEntries() {
               <div className="flex items-center gap-2">
                 <div className="font-semibold">{formatNumber(entry.quantity)}</div>
                 <Badge variant="outline">
-                  {entry.shift === "morning" ? "Morning" : 
-                   entry.shift === "afternoon" ? "Afternoon" : "Night"}
+                  {formatShift(entry.shift)}
                 </Badge>
               </div>
               <EntryActionButtons entry={entry} type={activeTab as "production" | "disposal"} />

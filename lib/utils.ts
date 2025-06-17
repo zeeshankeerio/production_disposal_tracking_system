@@ -249,3 +249,15 @@ export function mapDisposalEntryFromDB(dbEntry: any): any {
   }
 }
 
+/**
+ * Formats a shift string to proper case
+ */
+export function formatShift(shift: string): string {
+  switch (shift.toLowerCase()) {
+    case "morning": return "Morning";
+    case "afternoon": return "Afternoon";
+    case "night": return "Night";
+    default: return "Unknown";
+  }
+}
+
