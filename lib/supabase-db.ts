@@ -142,13 +142,14 @@ export const clearProducts = async (): Promise<boolean> => {
   }
 }
 
-// Helper function to format date strings consistently
+// Helper function to format date strings consistently in EST
 const formatDateValue = (value: any): string => {
   if (!value) return '';
   
   try {
     if (value instanceof Date) {
-      return fromEastern(value).toISOString().split('T')[0];
+      // Convert to New York timezone
+      return new Date(value.toLocaleString('en-US', { timeZone: 'America/New_York' })).toISOString();
     }
     
     const date = new Date(value);
@@ -156,7 +157,8 @@ const formatDateValue = (value: any): string => {
       throw new Error('Invalid date');
     }
     
-    return fromEastern(date).toISOString().split('T')[0];
+    // Convert to New York timezone
+    return new Date(date.toLocaleString('en-US', { timeZone: 'America/New_York' })).toISOString();
   } catch (error) {
     console.error('Error formatting date:', error);
     throw new Error('Invalid date format');
@@ -177,7 +179,7 @@ export const getProductionEntries = async (): Promise<ProductionEntry[]> => {
     
     return (data || []).map(entry => ({
       ...entry,
-      date: new Date(entry.date)
+      date: new Date(entry.date) // Date is already in EST from storage
     }))
   } catch (err) {
     throw handleSupabaseError(err)
@@ -188,6 +190,10 @@ export const createProductionEntry = async (entry: Omit<ProductionEntry, "id">):
   try {
     const supabase = createServerSupabaseClient()
     
+    // Create current timestamp in New York timezone
+    const now = new Date();
+    const newYorkTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    
     const { data, error } = await supabase
       .from('production_entries')
       .insert({
@@ -197,7 +203,8 @@ export const createProductionEntry = async (entry: Omit<ProductionEntry, "id">):
         product_name: entry.product_name,
         quantity: entry.quantity,
         shift: entry.shift,
-        expiration_date: formatDateValue(entry.expiration_date)
+        expiration_date: formatDateValue(entry.expiration_date),
+        created_at: newYorkTime.toISOString()
       })
       .select()
       .single()
@@ -207,7 +214,8 @@ export const createProductionEntry = async (entry: Omit<ProductionEntry, "id">):
     return {
       ...data,
       date: new Date(data.date),
-      expiration_date: data.expiration_date
+      expiration_date: data.expiration_date,
+      created_at: new Date(data.created_at)
     }
   } catch (err) {
     throw handleSupabaseError(err)
@@ -258,7 +266,7 @@ export const getDisposalEntries = async (): Promise<DisposalEntry[]> => {
     
     return (data || []).map(entry => ({
       ...entry,
-      date: new Date(entry.date)
+      date: new Date(entry.date) // Date is already in EST from storage
     }))
   } catch (err) {
     throw handleSupabaseError(err)
@@ -268,6 +276,10 @@ export const getDisposalEntries = async (): Promise<DisposalEntry[]> => {
 export const createDisposalEntry = async (entry: Omit<DisposalEntry, "id">): Promise<DisposalEntry | null> => {
   try {
     const supabase = createServerSupabaseClient()
+    
+    // Create current timestamp in New York timezone
+    const now = new Date();
+    const newYorkTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
     
     const { data, error } = await supabase
       .from('disposal_entries')
@@ -279,7 +291,8 @@ export const createDisposalEntry = async (entry: Omit<DisposalEntry, "id">): Pro
         quantity: entry.quantity,
         shift: entry.shift,
         reason: entry.reason,
-        notes: entry.notes || null
+        notes: entry.notes || null,
+        created_at: newYorkTime.toISOString()
       })
       .select()
       .single()
@@ -288,7 +301,8 @@ export const createDisposalEntry = async (entry: Omit<DisposalEntry, "id">): Pro
     
     return {
       ...data,
-      date: new Date(data.date)
+      date: new Date(data.date),
+      created_at: new Date(data.created_at)
     }
   } catch (err) {
     throw handleSupabaseError(err)

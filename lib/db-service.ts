@@ -3,6 +3,7 @@
 import { createServerSupabaseClient } from "./supabase"
 import type { Product, ProductionEntry, DisposalEntry } from "./types"
 import { mapProductFromDB, mapProductionEntryFromDB, mapDisposalEntryFromDB } from "./utils"
+import { getCurrentEasternTime, prepareDateForSubmission } from "./date-utils"
 
 // Utility function to check if a table exists
 async function checkTableExists(tableName: string): Promise<boolean> {
@@ -16,36 +17,26 @@ async function checkTableExists(tableName: string): Promise<boolean> {
   }
 }
 
-// Error handling utility
+// Helper function to handle database errors
 function handleDatabaseError(error: any, operation: string): never {
-  if (error.code === '42P01') { // Table doesn't exist
-    const tableName = error.message.match(/relation "([^"]+)" does not exist/)?.[1] || 'unknown'
-    throw new Error(`Database table '${tableName}' doesn't exist. Please run the setup script.`)
-  }
-  
-  console.error(`Error ${operation}:`, error)
-  throw new Error(`Failed to ${operation}. ${error.message || 'Unknown error'}`)
+  console.error(`Error during ${operation}:`, error)
+  throw new Error(`Failed to ${operation}: ${error.message || 'Unknown error'}`)
 }
 
 // Product operations
 export async function getProducts(): Promise<Product[]> {
   const supabase = createServerSupabaseClient()
-
   try {
-    const tableExists = await checkTableExists("products")
-    if (!tableExists) {
-      throw new Error("Products table doesn't exist. Please run the setup script.")
-    }
-
-    const { data, error } = await supabase.from("products").select("*").order("name")
-
-    if (error) {
-      throw error
-    }
-
-    return data.map(mapProductFromDB)
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('name')
+    
+    if (error) throw error
+    
+    return (data || []).map(mapProductFromDB)
   } catch (error) {
-    return handleDatabaseError(error, "fetch products")
+    return handleDatabaseError(error, 'get products')
   }
 }
 
@@ -95,25 +86,17 @@ export async function addProduct(product: Omit<Product, "id">): Promise<Product>
 // Production entry operations
 export async function getProductionEntries(): Promise<ProductionEntry[]> {
   const supabase = createServerSupabaseClient()
-
   try {
-    const tableExists = await checkTableExists("production_entries")
-    if (!tableExists) {
-      throw new Error("Production entries table doesn't exist. Please run the setup script.")
-    }
-
     const { data, error } = await supabase
-      .from("production_entries")
-      .select("*")
-      .order("created_at", { ascending: false })
-
-    if (error) {
-      throw error
-    }
-
-    return data.map(mapProductionEntryFromDB)
+      .from('production_entries')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    
+    return (data || []).map(mapProductionEntryFromDB)
   } catch (error) {
-    return handleDatabaseError(error, "fetch production entries")
+    return handleDatabaseError(error, 'get production entries')
   }
 }
 
@@ -121,16 +104,21 @@ export async function addProductionEntry(entry: Omit<ProductionEntry, "id" | "cr
   const supabase = createServerSupabaseClient()
 
   try {
+    // Get the exact current time in New York timezone
+    const now = new Date();
+    const newYorkTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    
     const { data, error } = await supabase
       .from("production_entries")
       .insert({
         staff_name: entry.staff_name,
-        date: entry.date,
+        date: prepareDateForSubmission(entry.date),
         product_id: entry.product_id,
         product_name: entry.product_name,
         quantity: entry.quantity,
         shift: entry.shift,
         expiration_date: entry.expiration_date,
+        created_at: newYorkTime.toISOString()
       })
       .select()
       .single()
@@ -148,22 +136,17 @@ export async function addProductionEntry(entry: Omit<ProductionEntry, "id" | "cr
 // Disposal entry operations
 export async function getDisposalEntries(): Promise<DisposalEntry[]> {
   const supabase = createServerSupabaseClient()
-
   try {
-    const tableExists = await checkTableExists("disposal_entries")
-    if (!tableExists) {
-      throw new Error("Disposal entries table doesn't exist. Please run the setup script.")
-    }
-
-    const { data, error } = await supabase.from("disposal_entries").select("*").order("created_at", { ascending: false })
-
-    if (error) {
-      throw error
-    }
-
-    return data.map(mapDisposalEntryFromDB)
+    const { data, error } = await supabase
+      .from('disposal_entries')
+      .select('*')
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    
+    return (data || []).map(mapDisposalEntryFromDB)
   } catch (error) {
-    return handleDatabaseError(error, "fetch disposal entries")
+    return handleDatabaseError(error, 'get disposal entries')
   }
 }
 
@@ -171,17 +154,22 @@ export async function addDisposalEntry(entry: Omit<DisposalEntry, "id" | "create
   const supabase = createServerSupabaseClient()
 
   try {
+    // Get the exact current time in New York timezone
+    const now = new Date();
+    const newYorkTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    
     const { data, error } = await supabase
       .from("disposal_entries")
       .insert({
         staff_name: entry.staff_name,
-        date: entry.date,
+        date: prepareDateForSubmission(entry.date),
         product_id: entry.product_id,
         product_name: entry.product_name,
         quantity: entry.quantity,
         shift: entry.shift,
         reason: entry.reason,
         notes: entry.notes,
+        created_at: newYorkTime.toISOString()
       })
       .select()
       .single()
@@ -215,7 +203,8 @@ export async function getProductionAnalytics() {
   // Production by day
   const productionByDay = entries.reduce(
     (acc, entry) => {
-      acc[entry.date] = (acc[entry.date] || 0) + entry.quantity
+      const dateStr = entry.date.toISOString().split('T')[0]
+      acc[dateStr] = (acc[dateStr] || 0) + entry.quantity
       return acc
     },
     {} as Record<string, number>,

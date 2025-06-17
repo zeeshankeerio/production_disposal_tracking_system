@@ -43,8 +43,10 @@ import { Combobox, ComboboxOption } from "@/components/ui/combobox"
 import { SimpleDatePicker } from "@/components/ui/simple-date-picker"
 import { DatePickerWrapper } from "@/components/ui/date-picker-wrapper"
 import { DatePickerWrapper as ClientDatePicker } from "@/components/ui/client-pickers"
-import { prepareDateForSubmission } from "@/lib/date-utils"
+import { prepareDateForSubmission, formatEastern } from "@/lib/date-utils"
 import { formatShift } from "@/lib/utils"
+
+const NEW_YORK_TIMEZONE = 'America/New_York';
 
 // Common disposal reasons
 const DISPOSAL_REASONS = [
@@ -101,7 +103,10 @@ const formatDate = (date: Date | string | undefined): string => {
   try {
     const dateObj = typeof date === "string" ? new Date(date) : date
     if (isNaN(dateObj.getTime())) return "Invalid Date"
-    return format(dateObj, "MMM dd, yyyy HH:mm")
+    
+    // Convert to New York timezone
+    const newYorkDate = new Date(dateObj.toLocaleString('en-US', { timeZone: NEW_YORK_TIMEZONE }));
+    return formatEastern(newYorkDate, "MMM dd, yyyy HH:mm")
   } catch (error) {
     console.error("Error formatting date:", error)
     return "Invalid Date"

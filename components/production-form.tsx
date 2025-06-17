@@ -43,7 +43,7 @@ import { Combobox, ComboboxOption } from "@/components/ui/combobox"
 import { SimpleDatePicker } from "@/components/ui/simple-date-picker"
 import { DatePickerWrapper } from "@/components/ui/date-picker-wrapper"
 import { DatePickerWrapper as ClientDatePicker } from "@/components/ui/client-pickers"
-import { prepareDateForSubmission, toEastern, fromEastern } from "@/lib/date-utils"
+import { prepareDateForSubmission, toEastern, fromEastern, formatEastern } from "@/lib/date-utils"
 import { formatShift } from "@/lib/utils"
 
 const productionSchema = z.object({
@@ -78,6 +78,8 @@ type CommonFields = {
   shift: "morning" | "afternoon" | "night";
   staff_name: string;
 }
+
+const NEW_YORK_TIMEZONE = 'America/New_York';
 
 export function ProductionForm() {
   const { addProductionEntry, products, refreshData, isLoading: isDataLoading } = useData()
@@ -348,8 +350,11 @@ export function ProductionForm() {
         return "Invalid date";
       }
 
+      // Convert to New York timezone
+      const newYorkDate = new Date(date.toLocaleString('en-US', { timeZone: NEW_YORK_TIMEZONE }));
+
       // Format the date
-      return format(date, "MMM dd, yyyy");
+      return formatEastern(newYorkDate, "MMM dd, yyyy");
     } catch (error) {
       console.error("Error formatting date:", error, "Input:", dateString);
       return "Invalid date";
@@ -359,8 +364,16 @@ export function ProductionForm() {
   // Safe date validation
   const isValidDate = (date: any): boolean => {
     if (!date) return false;
-    const d = new Date(date);
-    return !isNaN(d.getTime());
+    try {
+      const d = new Date(date);
+      if (isNaN(d.getTime())) return false;
+      
+      // Convert to New York timezone for validation
+      const newYorkDate = new Date(d.toLocaleString('en-US', { timeZone: NEW_YORK_TIMEZONE }));
+      return !isNaN(newYorkDate.getTime());
+    } catch (error) {
+      return false;
+    }
   };
 
   return (

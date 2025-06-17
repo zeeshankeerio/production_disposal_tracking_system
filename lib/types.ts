@@ -25,6 +25,7 @@ export interface BaseEntry {
 
 export interface ProductionEntry extends BaseEntry {
   expiration_date: string
+  created_at?: Date
 }
 
 export interface DisposalEntry {
@@ -37,6 +38,7 @@ export interface DisposalEntry {
   reason: string
   staff_name: string
   notes?: string
+  created_at?: Date
 }
 
 export interface ApiResponse<T> {
@@ -148,40 +150,54 @@ export interface ProductPerformance {
 
 // Helper to convert from database format to application format
 export function mapProductFromDB(product: any): Product {
+  if (!product) {
+    throw new Error('Invalid product data');
+  }
+  
   return {
-    id: product.id,
-    name: product.name,
-    description: product.description,
-    unit: product.unit,
-    category: product.category as ProductCategory,
+    id: product.id || '',
+    name: product.name || '',
+    description: product.description || undefined,
+    unit: product.unit || '',
+    category: product.category as ProductCategory || 'Outros',
   }
 }
 
 export function mapProductionEntryFromDB(entry: any): ProductionEntry {
+  if (!entry) {
+    throw new Error('Invalid production entry data');
+  }
+  
   return {
-    id: entry.id,
-    staff_name: entry.staff_name,
-    date: new Date(entry.date),
-    product_name: entry.product_name,
-    product_id: entry.product_id,
-    quantity: entry.quantity,
-    shift: entry.shift as Shift,
-    notes: entry.notes,
-    expiration_date: entry.expiration_date,
+    id: entry.id || '',
+    staff_name: entry.staff_name || '',
+    date: entry.date ? new Date(entry.date) : new Date(),
+    product_name: entry.product_name || '',
+    product_id: entry.product_id || '',
+    quantity: typeof entry.quantity === 'number' ? entry.quantity : 0,
+    shift: entry.shift as Shift || 'morning',
+    notes: entry.notes || undefined,
+    expiration_date: entry.expiration_date || '',
+    created_at: entry.created_at ? new Date(entry.created_at) : undefined,
   }
 }
 
 export function mapDisposalEntryFromDB(entry: any): DisposalEntry {
+  if (!entry) {
+    throw new Error('Invalid disposal entry data');
+  }
+  
   return {
-    id: entry.id,
-    staff_name: entry.staff_name,
-    date: new Date(entry.date),
-    product_name: entry.product_name,
-    product_id: entry.product_id,
-    quantity: entry.quantity,
-    shift: entry.shift as Shift,
-    reason: entry.reason as DisposalReason,
-    notes: entry.notes,
+    id: entry.id || '',
+    staff_name: entry.staff_name || '',
+    date: entry.date ? new Date(entry.date) : new Date(),
+    product_name: entry.product_name || '',
+    product_id: entry.product_id || '',
+    quantity: typeof entry.quantity === 'number' ? entry.quantity : 0,
+    shift: entry.shift as Shift || 'morning',
+    reason: entry.reason || '',
+    notes: entry.notes || undefined,
+    created_at: entry.created_at ? new Date(entry.created_at) : undefined,
   }
 }
 

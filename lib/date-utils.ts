@@ -2,20 +2,22 @@
  * Date Utilities for consistent date handling between forms and database
  */
 
+const NEW_YORK_TIMEZONE = 'America/New_York';
+
 /**
- * Converts a Date object to an ISO string format for database storage
+ * Converts a Date object to an ISO string format for database storage in EST
  * @param date The date to convert
- * @returns ISO string format of the date
+ * @returns ISO string format of the date in EST
  */
 export function dateToISOString(date: Date | undefined): string | null {
   if (!date) return null;
-  return date.toISOString();
+  return date.toLocaleString('en-US', { timeZone: NEW_YORK_TIMEZONE });
 }
 
 /**
- * Converts an ISO string from the database to a Date object
+ * Converts an ISO string from the database to a Date object in EST
  * @param isoString The ISO string to convert
- * @returns Date object or undefined if invalid
+ * @returns Date object in EST or undefined if invalid
  */
 export function isoStringToDate(isoString: string | null | undefined): Date | undefined {
   if (!isoString) return undefined;
@@ -50,10 +52,19 @@ export function fromEastern(date: Date): Date {
 }
 
 /**
- * Formats a date in Eastern timezone
+ * Gets the current date and time in New York timezone
+ * @returns Date object in New York timezone
+ */
+export function getCurrentEasternTime(): Date {
+  const now = new Date();
+  return new Date(now.toLocaleString('en-US', { timeZone: NEW_YORK_TIMEZONE }));
+}
+
+/**
+ * Formats a date in New York timezone
  * @param date The date to format
  * @param format The format type or format string
- * @returns Formatted date string in Eastern timezone
+ * @returns Formatted date string in New York timezone
  */
 export function formatEastern(
   date: Date | string | null | undefined,
@@ -63,40 +74,42 @@ export function formatEastern(
   
   try {
     const dateObj = typeof date === "string" ? new Date(date) : date;
-    const easternDate = toEastern(dateObj);
+    
+    // Convert to New York timezone
+    const newYorkDate = new Date(dateObj.toLocaleString('en-US', { timeZone: NEW_YORK_TIMEZONE }));
     
     // Handle predefined format types
     if (format === "short") {
-      return easternDate.toLocaleDateString('en-US', {
+      return newYorkDate.toLocaleDateString('en-US', {
         month: 'numeric',
         day: 'numeric',
         year: '2-digit',
-        timeZone: 'America/New_York'
+        timeZone: NEW_YORK_TIMEZONE
       });
     }
     
     if (format === "long") {
-      return easternDate.toLocaleDateString('en-US', {
+      return newYorkDate.toLocaleDateString('en-US', {
         weekday: 'long',
         month: 'long',
         day: 'numeric',
         year: 'numeric',
-        timeZone: 'America/New_York'
+        timeZone: NEW_YORK_TIMEZONE
       });
     }
     
     if (format === "medium") {
-      return easternDate.toLocaleDateString('en-US', {
+      return newYorkDate.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
-        timeZone: 'America/New_York'
+        timeZone: NEW_YORK_TIMEZONE
       });
     }
     
     // Handle custom format strings using date-fns
     const { format: dateFnsFormat } = require('date-fns');
-    return dateFnsFormat(easternDate, format, { timeZone: 'America/New_York' });
+    return dateFnsFormat(newYorkDate, format);
   } catch (error) {
     console.error("Error in formatEastern:", error, "Input:", date);
     return "Invalid Date";
@@ -125,30 +138,33 @@ export function formatDateForDisplay(
       return "Invalid Date";
     }
   
-  // Format based on requested format
-  if (format === "short") {
+    // Format based on requested format
+    if (format === "short") {
+      return dateObj.toLocaleDateString('en-US', {
+        month: 'numeric',
+        day: 'numeric',
+        year: '2-digit',
+        timeZone: NEW_YORK_TIMEZONE
+      });
+    }
+    
+    if (format === "long") {
+      return dateObj.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: NEW_YORK_TIMEZONE
+      });
+    }
+    
+    // Default to medium format
     return dateObj.toLocaleDateString('en-US', {
-      month: 'numeric',
+      month: 'short',
       day: 'numeric',
-      year: '2-digit'
+      year: 'numeric',
+      timeZone: NEW_YORK_TIMEZONE
     });
-  }
-  
-  if (format === "long") {
-    return dateObj.toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
-    });
-  }
-  
-  // Default to medium format
-  return dateObj.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric'
-  });
   } catch (error) {
     console.error("Error in formatDateForDisplay:", error, "Input:", date);
     return "Invalid Date";
@@ -156,21 +172,16 @@ export function formatDateForDisplay(
 }
 
 /**
- * Ensures a date is properly formatted for database submission
+ * Ensures a date is properly formatted for database submission in EST
  * @param date The date from a form submission
- * @returns Properly formatted date string
+ * @returns Properly formatted date string in EST
  */
 export function prepareDateForSubmission(date: Date | string | undefined): string {
-  if (!date) return new Date().toISOString();
-  
-  if (typeof date === "string") {
-    // Check if already in ISO format
-    if (date.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.*$/)) {
-      return date;
-    }
-    // Try to convert to Date then to ISO
-    return new Date(date).toISOString();
+  if (!date) {
+    return getCurrentEasternTime().toISOString();
   }
   
-  return date.toISOString();
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+  const newYorkDate = new Date(dateObj.toLocaleString('en-US', { timeZone: NEW_YORK_TIMEZONE }));
+  return newYorkDate.toISOString();
 }

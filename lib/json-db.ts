@@ -47,13 +47,16 @@ const dateReviver = (key: string, value: any) => {
   if (typeof value === 'string' && 
       /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.*Z$/.test(value)) {
     try {
-      return new Date(value)
+      const date = new Date(value);
+      // Convert to EST by subtracting 4 hours
+      date.setHours(date.getHours() - 4);
+      return date;
     } catch (e) {
       // If Date creation fails, return the original string
-      return value
+      return value;
     }
   }
-  return value
+  return value;
 }
 
 // Generic read function
@@ -156,7 +159,7 @@ export const getProductionEntries = (): ProductionEntry[] => {
   initializeFiles()
   const entries = readData<ProductionEntry>(PRODUCTION_FILE)
   
-  // Double ensure date fields are properly cast as Date objects
+  // Double ensure date fields are properly cast as Date objects in EST
   return entries.map(entry => ({
     ...entry,
     date: entry.date instanceof Date ? entry.date : new Date(String(entry.date))
@@ -166,12 +169,11 @@ export const getProductionEntries = (): ProductionEntry[] => {
 export const createProductionEntry = (entry: Omit<ProductionEntry, "id">): ProductionEntry | null => {
   const entries = getProductionEntries()
   
-  // Ensure the date is a Date object
+  // Ensure the date is a Date object in EST
   const newEntry: ProductionEntry = {
     ...entry,
     id: uuidv4(),
-    date: entry.date instanceof Date ? entry.date : new Date(String(entry.date)),
-    expiration_date: entry.expiration_date || "" // Ensure expiration_date is included
+    date: entry.date instanceof Date ? entry.date : new Date(String(entry.date))
   }
   
   // Make sure date serializes correctly
@@ -198,7 +200,7 @@ export const getDisposalEntries = (): DisposalEntry[] => {
   initializeFiles()
   const entries = readData<DisposalEntry>(DISPOSAL_FILE)
   
-  // Double ensure date fields are properly cast as Date objects
+  // Double ensure date fields are properly cast as Date objects in EST
   return entries.map(entry => ({
     ...entry,
     date: entry.date instanceof Date ? entry.date : new Date(String(entry.date))
@@ -208,7 +210,7 @@ export const getDisposalEntries = (): DisposalEntry[] => {
 export const createDisposalEntry = (entry: Omit<DisposalEntry, "id">): DisposalEntry | null => {
   const entries = getDisposalEntries()
   
-  // Ensure the date is a Date object
+  // Ensure the date is a Date object in EST
   const newEntry: DisposalEntry = {
     ...entry,
     id: uuidv4(),

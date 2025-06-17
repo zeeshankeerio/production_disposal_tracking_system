@@ -1,332 +1,302 @@
 [
   {
     "staff_name": "Ana Santos",
-    "date": "2025-06-10T14:15:58.811Z",
-    "product_id": "dd401bc5-5dda-4b39-bc8f-0c5f5cbb0a73",
+    "date": "2025-06-07T22:55:07.210Z",
+    "product_id": "5b05483c-8b15-4deb-9250-7e08d28f6214",
     "product_name": "Brigadeiro",
-    "quantity": 108,
-    "shift": "night",
-    "notes": "Sample production entry",
-    "id": "6a6657bc-bee4-42b5-8d33-aec84c62cc7d",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "João Oliveira",
-    "date": "2025-06-02T14:15:58.805Z",
-    "product_id": "dd401bc5-5dda-4b39-bc8f-0c5f5cbb0a73",
-    "product_name": "Brigadeiro",
-    "quantity": 29,
-    "shift": "afternoon",
-    "notes": "Sample production entry",
-    "id": "be97bdf0-5772-457d-8b66-259430e07617",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "Maria Silva",
-    "date": "2025-06-05T14:15:58.802Z",
-    "product_id": "dd401bc5-5dda-4b39-bc8f-0c5f5cbb0a73",
-    "product_name": "Brigadeiro",
-    "quantity": 43,
-    "shift": "morning",
-    "notes": "Sample production entry",
-    "id": "1a9eb67c-4873-4bfa-82ca-fcbcc64b23fb",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "Ana Santos",
-    "date": "2025-06-06T14:15:58.798Z",
-    "product_id": "21777f78-16d2-4fe5-8d9f-dacd9b7e99fe",
-    "product_name": "Torta de Limão",
-    "quantity": 10,
-    "shift": "night",
-    "notes": "Sample production entry",
-    "id": "37f2d0bb-7abe-4d99-a02b-06fa193b5616",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "João Oliveira",
-    "date": "2025-05-20T14:15:58.794Z",
-    "product_id": "21777f78-16d2-4fe5-8d9f-dacd9b7e99fe",
-    "product_name": "Torta de Limão",
-    "quantity": 40,
-    "shift": "afternoon",
-    "notes": "Sample production entry",
-    "id": "1d552ddd-caa5-4a41-96d2-c0d5f7c4f7c7",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "Maria Silva",
-    "date": "2025-05-29T14:15:58.791Z",
-    "product_id": "21777f78-16d2-4fe5-8d9f-dacd9b7e99fe",
-    "product_name": "Torta de Limão",
-    "quantity": 61,
-    "shift": "morning",
-    "notes": "Sample production entry",
-    "id": "bd736ce1-b263-4263-8f77-3da518a3db54",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "Ana Santos",
-    "date": "2025-05-24T14:15:58.788Z",
-    "product_id": "3d5908d8-93c5-4832-9b60-875af69a66d9",
-    "product_name": "Pão de Queijo",
-    "quantity": 70,
-    "shift": "night",
-    "notes": "Sample production entry",
-    "id": "3e4d2719-fa9a-472a-9c5c-ce15660e3499",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "João Oliveira",
-    "date": "2025-06-05T14:15:58.784Z",
-    "product_id": "3d5908d8-93c5-4832-9b60-875af69a66d9",
-    "product_name": "Pão de Queijo",
-    "quantity": 79,
-    "shift": "afternoon",
-    "notes": "Sample production entry",
-    "id": "6274af9c-c31a-49ae-9c2a-a51f2ccfe54a",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "Maria Silva",
-    "date": "2025-06-16T14:15:58.781Z",
-    "product_id": "3d5908d8-93c5-4832-9b60-875af69a66d9",
-    "product_name": "Pão de Queijo",
-    "quantity": 79,
-    "shift": "morning",
-    "notes": "Sample production entry",
-    "id": "9622b065-fbb5-4d70-adb5-de1222652243",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "Ana Santos",
-    "date": "2025-05-28T14:15:58.777Z",
-    "product_id": "e3f97889-78ae-4e31-ac19-94fccdd2af4e",
-    "product_name": "Bolo de Cenoura",
-    "quantity": 64,
-    "shift": "night",
-    "notes": "Sample production entry",
-    "id": "a22b4475-955e-42c9-a582-3621399b5528",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "João Oliveira",
-    "date": "2025-05-29T14:15:58.775Z",
-    "product_id": "e3f97889-78ae-4e31-ac19-94fccdd2af4e",
-    "product_name": "Bolo de Cenoura",
-    "quantity": 103,
-    "shift": "afternoon",
-    "notes": "Sample production entry",
-    "id": "d0db261c-f26f-4ebd-be34-12cdf47f11b1",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "Maria Silva",
-    "date": "2025-05-22T14:15:58.770Z",
-    "product_id": "e3f97889-78ae-4e31-ac19-94fccdd2af4e",
-    "product_name": "Bolo de Cenoura",
-    "quantity": 37,
-    "shift": "morning",
-    "notes": "Sample production entry",
-    "id": "3fc28ab3-e8b6-4720-99ac-e5998ff3eb43",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "Ana Santos",
-    "date": "2025-06-16T14:15:58.766Z",
-    "product_id": "11c0c045-3cd0-44d0-a119-571ae96dbb20",
-    "product_name": "Esfiha",
-    "quantity": 20,
-    "shift": "night",
-    "notes": "Sample production entry",
-    "id": "41b91398-be19-46a3-962d-e873bb3c5f1e",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "João Oliveira",
-    "date": "2025-05-24T14:15:58.761Z",
-    "product_id": "11c0c045-3cd0-44d0-a119-571ae96dbb20",
-    "product_name": "Esfiha",
-    "quantity": 94,
-    "shift": "afternoon",
-    "notes": "Sample production entry",
-    "id": "6ec01eb0-9dc6-4d7d-9f35-93f5619e359f",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "Maria Silva",
-    "date": "2025-05-18T14:15:58.757Z",
-    "product_id": "11c0c045-3cd0-44d0-a119-571ae96dbb20",
-    "product_name": "Esfiha",
-    "quantity": 39,
-    "shift": "morning",
-    "notes": "Sample production entry",
-    "id": "d123c99b-838c-42fb-b9d1-945fe6b523e1",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "Ana Santos",
-    "date": "2025-05-31T14:15:58.751Z",
-    "product_id": "10da6b23-b9cd-42ff-b44b-44ebd9cd4416",
-    "product_name": "Coxinha",
     "quantity": 83,
     "shift": "night",
     "notes": "Sample production entry",
-    "id": "9ac7b987-aa4b-40d2-9fd2-02df654e133e",
-    "expiration_date": ""
+    "id": "2fe242d0-ea3f-41fd-ad40-0a12b3c3d98a"
   },
   {
     "staff_name": "João Oliveira",
-    "date": "2025-06-07T14:15:58.744Z",
-    "product_id": "10da6b23-b9cd-42ff-b44b-44ebd9cd4416",
-    "product_name": "Coxinha",
-    "quantity": 75,
+    "date": "2025-06-16T18:55:07.206Z",
+    "product_id": "5b05483c-8b15-4deb-9250-7e08d28f6214",
+    "product_name": "Brigadeiro",
+    "quantity": 13,
     "shift": "afternoon",
     "notes": "Sample production entry",
-    "id": "c729096a-6f21-43cc-a8ef-9aec1aa30c14",
-    "expiration_date": ""
+    "id": "03000104-d97a-445e-8822-00ea51bc3ce8"
   },
   {
     "staff_name": "Maria Silva",
-    "date": "2025-06-07T14:15:58.741Z",
-    "product_id": "10da6b23-b9cd-42ff-b44b-44ebd9cd4416",
-    "product_name": "Coxinha",
-    "quantity": 54,
+    "date": "2025-06-12T14:55:07.203Z",
+    "product_id": "5b05483c-8b15-4deb-9250-7e08d28f6214",
+    "product_name": "Brigadeiro",
+    "quantity": 83,
     "shift": "morning",
     "notes": "Sample production entry",
-    "id": "ff9d72d1-4033-4a06-a623-3532aa3c1cc6",
-    "expiration_date": ""
+    "id": "0b4d67f9-17b2-4c14-b020-aef61399c4d5"
   },
   {
     "staff_name": "Ana Santos",
-    "date": "2025-05-26T14:15:58.738Z",
-    "product_id": "65f213bb-59f1-4410-b151-7d881296fbb1",
+    "date": "2025-05-29T10:55:07.200Z",
+    "product_id": "d7db59b7-f545-4dc1-8d3b-b91952218551",
+    "product_name": "Torta de Limão",
+    "quantity": 108,
+    "shift": "night",
+    "notes": "Sample production entry",
+    "id": "96c1153e-ea28-42a6-90a8-5f11ddecfcaa"
+  },
+  {
+    "staff_name": "João Oliveira",
+    "date": "2025-05-29T06:55:07.194Z",
+    "product_id": "d7db59b7-f545-4dc1-8d3b-b91952218551",
+    "product_name": "Torta de Limão",
+    "quantity": 72,
+    "shift": "afternoon",
+    "notes": "Sample production entry",
+    "id": "89f5b757-1566-4a9d-b6d4-2fd8462a728b"
+  },
+  {
+    "staff_name": "Maria Silva",
+    "date": "2025-05-21T02:55:07.190Z",
+    "product_id": "d7db59b7-f545-4dc1-8d3b-b91952218551",
+    "product_name": "Torta de Limão",
+    "quantity": 101,
+    "shift": "morning",
+    "notes": "Sample production entry",
+    "id": "ef0984b6-3340-42db-94d9-190791d0a366"
+  },
+  {
+    "staff_name": "Ana Santos",
+    "date": "2025-06-02T22:55:07.186Z",
+    "product_id": "f1f8a071-c850-45dd-90dc-e152a78c0936",
+    "product_name": "Pão de Queijo",
+    "quantity": 64,
+    "shift": "night",
+    "notes": "Sample production entry",
+    "id": "ea719956-8dce-44a3-90be-d0ed755689ca"
+  },
+  {
+    "staff_name": "João Oliveira",
+    "date": "2025-05-21T18:55:07.182Z",
+    "product_id": "f1f8a071-c850-45dd-90dc-e152a78c0936",
+    "product_name": "Pão de Queijo",
+    "quantity": 61,
+    "shift": "afternoon",
+    "notes": "Sample production entry",
+    "id": "66ca1cd6-7eb9-4e88-857b-de9d242bc4f2"
+  },
+  {
+    "staff_name": "Maria Silva",
+    "date": "2025-06-05T14:55:07.178Z",
+    "product_id": "f1f8a071-c850-45dd-90dc-e152a78c0936",
+    "product_name": "Pão de Queijo",
+    "quantity": 85,
+    "shift": "morning",
+    "notes": "Sample production entry",
+    "id": "e48d3f30-f4fb-47b1-a5e2-ff0b267f1064"
+  },
+  {
+    "staff_name": "Ana Santos",
+    "date": "2025-06-06T10:55:07.176Z",
+    "product_id": "a53e56ff-4ef9-44bf-9d87-f136089cb4be",
+    "product_name": "Bolo de Cenoura",
+    "quantity": 24,
+    "shift": "night",
+    "notes": "Sample production entry",
+    "id": "fd88c8ef-e3de-4ca7-9c5f-84841a639a1e"
+  },
+  {
+    "staff_name": "João Oliveira",
+    "date": "2025-05-29T06:55:07.174Z",
+    "product_id": "a53e56ff-4ef9-44bf-9d87-f136089cb4be",
+    "product_name": "Bolo de Cenoura",
+    "quantity": 88,
+    "shift": "afternoon",
+    "notes": "Sample production entry",
+    "id": "116408ed-55cd-448b-863a-f73832753f1a"
+  },
+  {
+    "staff_name": "Maria Silva",
+    "date": "2025-05-21T02:55:07.172Z",
+    "product_id": "a53e56ff-4ef9-44bf-9d87-f136089cb4be",
+    "product_name": "Bolo de Cenoura",
+    "quantity": 32,
+    "shift": "morning",
+    "notes": "Sample production entry",
+    "id": "4d5087a5-e560-43a0-853f-2524a9612e32"
+  },
+  {
+    "staff_name": "Ana Santos",
+    "date": "2025-06-05T22:55:07.169Z",
+    "product_id": "691a9707-40a8-4b24-b56f-ac936a0a37da",
+    "product_name": "Esfiha",
+    "quantity": 51,
+    "shift": "night",
+    "notes": "Sample production entry",
+    "id": "bd1d7e0d-0a75-45cd-8118-2bac01074dd8"
+  },
+  {
+    "staff_name": "João Oliveira",
+    "date": "2025-06-08T18:55:07.167Z",
+    "product_id": "691a9707-40a8-4b24-b56f-ac936a0a37da",
+    "product_name": "Esfiha",
+    "quantity": 59,
+    "shift": "afternoon",
+    "notes": "Sample production entry",
+    "id": "956523f8-17c5-40dc-abd2-e60768b14c96"
+  },
+  {
+    "staff_name": "Maria Silva",
+    "date": "2025-06-01T14:55:07.162Z",
+    "product_id": "691a9707-40a8-4b24-b56f-ac936a0a37da",
+    "product_name": "Esfiha",
+    "quantity": 92,
+    "shift": "morning",
+    "notes": "Sample production entry",
+    "id": "2c3fd27b-79ff-486b-8a52-62ac3f9e8dad"
+  },
+  {
+    "staff_name": "Ana Santos",
+    "date": "2025-05-18T10:55:07.160Z",
+    "product_id": "47cd30f1-86a7-43f2-9baf-4800ff8f68c5",
+    "product_name": "Coxinha",
+    "quantity": 102,
+    "shift": "night",
+    "notes": "Sample production entry",
+    "id": "c6d9ec2b-5a6a-42b5-a9d9-e7ada9f88d30"
+  },
+  {
+    "staff_name": "João Oliveira",
+    "date": "2025-06-04T06:55:07.158Z",
+    "product_id": "47cd30f1-86a7-43f2-9baf-4800ff8f68c5",
+    "product_name": "Coxinha",
+    "quantity": 87,
+    "shift": "afternoon",
+    "notes": "Sample production entry",
+    "id": "25bab22a-cf19-459c-b042-fc1549883f3d"
+  },
+  {
+    "staff_name": "Maria Silva",
+    "date": "2025-06-07T02:55:07.155Z",
+    "product_id": "47cd30f1-86a7-43f2-9baf-4800ff8f68c5",
+    "product_name": "Coxinha",
+    "quantity": 43,
+    "shift": "morning",
+    "notes": "Sample production entry",
+    "id": "b35d696c-a81c-411c-89cb-7c47d7c14498"
+  },
+  {
+    "staff_name": "Ana Santos",
+    "date": "2025-06-06T22:55:07.153Z",
+    "product_id": "54e14cd7-e6fb-4703-a4f5-f0e1535598a5",
+    "product_name": "Bolo de Chocolate",
+    "quantity": 39,
+    "shift": "night",
+    "notes": "Sample production entry",
+    "id": "50b34ef1-7a7e-4c8e-9dc7-48d38dce97e9"
+  },
+  {
+    "staff_name": "João Oliveira",
+    "date": "2025-06-05T18:55:07.139Z",
+    "product_id": "54e14cd7-e6fb-4703-a4f5-f0e1535598a5",
+    "product_name": "Bolo de Chocolate",
+    "quantity": 49,
+    "shift": "afternoon",
+    "notes": "Sample production entry",
+    "id": "0db46ce2-a56f-481a-9cdc-3020ac29502a"
+  },
+  {
+    "staff_name": "Maria Silva",
+    "date": "2025-05-27T14:55:07.136Z",
+    "product_id": "54e14cd7-e6fb-4703-a4f5-f0e1535598a5",
     "product_name": "Bolo de Chocolate",
     "quantity": 55,
-    "shift": "night",
-    "notes": "Sample production entry",
-    "id": "edabf204-7a18-4121-b050-4dc9ee9b1a47",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "João Oliveira",
-    "date": "2025-05-30T14:15:58.736Z",
-    "product_id": "65f213bb-59f1-4410-b151-7d881296fbb1",
-    "product_name": "Bolo de Chocolate",
-    "quantity": 27,
-    "shift": "afternoon",
-    "notes": "Sample production entry",
-    "id": "370a8e74-9e6c-46e7-bde6-8c0a17a29cba",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "Maria Silva",
-    "date": "2025-06-08T14:15:58.734Z",
-    "product_id": "65f213bb-59f1-4410-b151-7d881296fbb1",
-    "product_name": "Bolo de Chocolate",
-    "quantity": 108,
     "shift": "morning",
     "notes": "Sample production entry",
-    "id": "2089fb80-1743-4d78-8be2-5af336d609d8",
-    "expiration_date": ""
+    "id": "e1c1bd34-572c-41dd-9262-fdcb943fdbdf"
   },
   {
     "staff_name": "Ana Santos",
-    "date": "2025-06-11T14:15:58.731Z",
-    "product_id": "e075d485-9145-4d03-81b4-798dba6eabea",
+    "date": "2025-06-02T10:55:07.133Z",
+    "product_id": "8c7c09db-6e07-4f48-8257-cc18c5ea2f84",
     "product_name": "Croissant",
-    "quantity": 87,
+    "quantity": 38,
     "shift": "night",
     "notes": "Sample production entry",
-    "id": "ad2e2936-87f0-4b5d-9b28-fb18a8eba492",
-    "expiration_date": ""
+    "id": "5bf0e731-b1d4-45a4-907b-a057f738f7b5"
   },
   {
     "staff_name": "João Oliveira",
-    "date": "2025-06-15T14:15:58.726Z",
-    "product_id": "e075d485-9145-4d03-81b4-798dba6eabea",
+    "date": "2025-05-29T06:55:07.129Z",
+    "product_id": "8c7c09db-6e07-4f48-8257-cc18c5ea2f84",
     "product_name": "Croissant",
-    "quantity": 12,
+    "quantity": 105,
     "shift": "afternoon",
     "notes": "Sample production entry",
-    "id": "ecb85bb9-e6df-46d5-896c-0816de5b6439",
-    "expiration_date": ""
+    "id": "348843a7-7390-4610-99b0-bf85ece15af2"
   },
   {
     "staff_name": "Maria Silva",
-    "date": "2025-05-29T14:15:58.721Z",
-    "product_id": "e075d485-9145-4d03-81b4-798dba6eabea",
+    "date": "2025-05-23T02:55:07.126Z",
+    "product_id": "8c7c09db-6e07-4f48-8257-cc18c5ea2f84",
     "product_name": "Croissant",
-    "quantity": 24,
+    "quantity": 20,
     "shift": "morning",
     "notes": "Sample production entry",
-    "id": "08b6bb17-1792-4cbf-8a87-fe8754736917",
-    "expiration_date": ""
+    "id": "ff684a3f-37d8-4379-a714-5b85e0ea7dce"
   },
   {
     "staff_name": "Ana Santos",
-    "date": "2025-05-31T14:15:58.719Z",
-    "product_id": "83738aa1-11c9-4d05-8550-e1a6444dbcd6",
+    "date": "2025-05-29T22:55:07.124Z",
+    "product_id": "c6b8d6da-1738-4b53-a4c3-ad1439b6c999",
     "product_name": "Pão de Forma",
-    "quantity": 14,
+    "quantity": 63,
     "shift": "night",
     "notes": "Sample production entry",
-    "id": "6d76f046-dd60-4ff9-b619-0b3e36304f87",
-    "expiration_date": ""
+    "id": "d6bece11-f304-4edb-868e-6bd22589909f"
   },
   {
     "staff_name": "João Oliveira",
-    "date": "2025-06-09T14:15:58.717Z",
-    "product_id": "83738aa1-11c9-4d05-8550-e1a6444dbcd6",
+    "date": "2025-06-06T18:55:07.122Z",
+    "product_id": "c6b8d6da-1738-4b53-a4c3-ad1439b6c999",
     "product_name": "Pão de Forma",
-    "quantity": 30,
+    "quantity": 97,
     "shift": "afternoon",
     "notes": "Sample production entry",
-    "id": "00be408c-8a18-48b2-91c9-28523764f63f",
-    "expiration_date": ""
+    "id": "e68a335c-3546-43ad-90b7-f6ce85a9885c"
   },
   {
     "staff_name": "Maria Silva",
-    "date": "2025-05-21T14:15:58.714Z",
-    "product_id": "83738aa1-11c9-4d05-8550-e1a6444dbcd6",
+    "date": "2025-06-10T14:55:07.120Z",
+    "product_id": "c6b8d6da-1738-4b53-a4c3-ad1439b6c999",
     "product_name": "Pão de Forma",
+    "quantity": 78,
+    "shift": "morning",
+    "notes": "Sample production entry",
+    "id": "e045a983-9158-4775-a00d-415d9f48506e"
+  },
+  {
+    "staff_name": "Ana Santos",
+    "date": "2025-05-29T10:55:07.119Z",
+    "product_id": "143124ec-95c8-4501-a482-dc9c05afead3",
+    "product_name": "Pão Francês",
+    "quantity": 91,
+    "shift": "night",
+    "notes": "Sample production entry",
+    "id": "737c651a-6cfd-4be8-b6f8-5b6d6e7646fc"
+  },
+  {
+    "staff_name": "João Oliveira",
+    "date": "2025-05-23T06:55:07.113Z",
+    "product_id": "143124ec-95c8-4501-a482-dc9c05afead3",
+    "product_name": "Pão Francês",
     "quantity": 41,
-    "shift": "morning",
-    "notes": "Sample production entry",
-    "id": "526e34ec-5709-4bca-a546-df608c02065f",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "Ana Santos",
-    "date": "2025-06-13T14:15:58.711Z",
-    "product_id": "e4f11e5b-bfb0-420d-96f6-b2a4915a08be",
-    "product_name": "Pão Francês",
-    "quantity": 46,
-    "shift": "night",
-    "notes": "Sample production entry",
-    "id": "549aaf6f-00bf-4be8-a5ed-6cb4e231bdb5",
-    "expiration_date": ""
-  },
-  {
-    "staff_name": "João Oliveira",
-    "date": "2025-06-04T14:15:58.709Z",
-    "product_id": "e4f11e5b-bfb0-420d-96f6-b2a4915a08be",
-    "product_name": "Pão Francês",
-    "quantity": 43,
     "shift": "afternoon",
     "notes": "Sample production entry",
-    "id": "30a5140c-611e-4c4e-82b7-b3ffce93054e",
-    "expiration_date": ""
+    "id": "c6ce0b6f-92e6-479b-af45-62e4e687c8af"
   },
   {
     "staff_name": "Maria Silva",
-    "date": "2025-05-19T14:15:58.706Z",
-    "product_id": "e4f11e5b-bfb0-420d-96f6-b2a4915a08be",
+    "date": "2025-05-28T02:55:07.111Z",
+    "product_id": "143124ec-95c8-4501-a482-dc9c05afead3",
     "product_name": "Pão Francês",
-    "quantity": 33,
+    "quantity": 88,
     "shift": "morning",
     "notes": "Sample production entry",
-    "id": "7b4d7a16-7bec-4935-963f-044b3c05c0dc",
-    "expiration_date": ""
+    "id": "bde84429-2ee1-4a6e-bc80-b72b3e389fc6"
   }
 ]

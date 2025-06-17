@@ -4,6 +4,8 @@ import { format } from "date-fns"
 import { UI_CONFIG } from "@/lib/config"
 import { formatEastern } from '@/lib/date-utils'
 
+const NEW_YORK_TIMEZONE = 'America/New_York';
+
 /**
  * Combines multiple class names into a single string using clsx and tailwind-merge
  */
@@ -38,21 +40,24 @@ export function formatDate(
       return "Invalid date"
     }
     
+    // Convert to New York timezone
+    const newYorkDate = new Date(date.toLocaleString('en-US', { timeZone: NEW_YORK_TIMEZONE }));
+    
     // Handle predefined format types
     if (formatType === 'date') {
-      return formatEastern(date, 'MM/dd/yyyy')
+      return formatEastern(newYorkDate, 'MM/dd/yyyy')
     }
     
     if (formatType === 'time') {
-      return formatEastern(date, 'HH:mm')
+      return formatEastern(newYorkDate, 'HH:mm')
     }
     
     if (formatType === 'datetime') {
-      return formatEastern(date, 'MM/dd/yyyy HH:mm')
+      return formatEastern(newYorkDate, 'MM/dd/yyyy HH:mm')
     }
     
     // Use date-fns for custom format strings
-    return formatEastern(date, formatType || UI_CONFIG?.DATE_FORMAT || 'PPP')
+    return formatEastern(newYorkDate, formatType || UI_CONFIG?.DATE_FORMAT || 'PPP')
   } catch (error) {
     console.error("Error formatting date:", error)
     return "Invalid date"
@@ -121,9 +126,10 @@ export function calculatePercentage(
  * Format date as YYYY-MM-DD for filenames
  */
 function formatDateForFilename(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const newYorkDate = new Date(date.toLocaleString('en-US', { timeZone: NEW_YORK_TIMEZONE }));
+  const year = newYorkDate.getFullYear();
+  const month = String(newYorkDate.getMonth() + 1).padStart(2, '0');
+  const day = String(newYorkDate.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 

@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { formatEastern } from "@/lib/date-utils"
 
 interface EntryDetailViewProps {
   entry: ProductionEntry | DisposalEntry
@@ -191,7 +192,14 @@ export function EntryDetailView({ entry, type }: EntryDetailViewProps) {
               <div className="grid grid-cols-2 gap-2">
                 <div className="text-xs">
                   <span className="text-muted-foreground">Created at:</span>
-                  <p>{format(new Date(entry.date), "PPP p")}</p>
+                  <div className="flex items-center gap-2 text-gray-600">
+                    <Calendar className="h-4 w-4" />
+                    <span>
+                      {entry.created_at 
+                        ? formatEastern(entry.created_at, "PPP p")
+                        : formatEastern(entry.date, "PPP p")}
+                    </span>
+                  </div>
                 </div>
                 <div className="text-xs">
                   <span className="text-muted-foreground">Entry ID:</span>
