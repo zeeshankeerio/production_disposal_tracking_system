@@ -524,14 +524,14 @@ export default function DisposalPage() {
               <div className="h-10 w-10 bg-destructive/10 rounded-lg flex items-center justify-center">
                 <PackageMinus className="h-5 w-5 text-destructive" />
               </div>
-              <div>
+        <div>
                 <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
                   Disposal Management
                 </h1>
                 <p className="text-muted-foreground text-sm font-medium">
                   Track and manage your disposal data with precision
-                </p>
-              </div>
+          </p>
+        </div>
             </div>
           </div>
           
@@ -560,7 +560,7 @@ export default function DisposalPage() {
               </Button>
             </div>
             <div className="h-8 w-px bg-border/50" />
-            <DigitalClock />
+          <DigitalClock />
           </div>
         </div>
       </div>
