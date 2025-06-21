@@ -20,6 +20,7 @@ import { PageRecentEntries } from "@/components/page-recent-entries"
 import { CopyrightFooter } from "@/components/copyright-footer"
 import { QuickNav } from "@/components/quick-nav"
 import { EntriesListView } from "@/components/entries-list-view"
+import { DigitalClock } from "@/components/digital-clock"
 import { toEastern } from '@/lib/date-utils'
 
 // Custom tooltip component
@@ -521,26 +522,8 @@ export default function DisposalPage() {
             Track and manage your disposal data
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="transition-all hover:shadow-md dark:shadow-none dark:hover:shadow-none dark:border-border/50"
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={exportToCSV}
-            className="transition-all hover:shadow-md dark:shadow-none dark:hover:shadow-none dark:border-border/50"
-          >
-            <FileText className="mr-2 h-4 w-4" />
-            Export
-          </Button>
+        <div className="shrink-0">
+          <DigitalClock />
         </div>
       </div>
       

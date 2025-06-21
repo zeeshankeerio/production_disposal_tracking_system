@@ -5,7 +5,7 @@ import {
 } from "@/lib/types"
 import { createServerSupabaseClient } from "./supabase"
 import { handleSupabaseError } from "./supabase"
-import { fromEastern } from '@/lib/date-utils';
+import { fromEastern, formatDateForTextDatabase, createEasternTimestamp, parseDateFromDatabase } from '@/lib/date-utils';
 
 // Products API
 export const getProducts = async (): Promise<Product[]> => {
@@ -142,23 +142,14 @@ export const clearProducts = async (): Promise<boolean> => {
   }
 }
 
-// Helper function to format date strings consistently in EST
+// Helper function to format date strings consistently in EST for TEXT fields
 const formatDateValue = (value: any): string => {
   if (!value) return '';
   
   try {
-    if (value instanceof Date) {
-      // Convert to New York timezone
-      return new Date(value.toLocaleString('en-US', { timeZone: 'America/New_York' })).toISOString();
-    }
-    
-    const date = new Date(value);
-    if (isNaN(date.getTime())) {
-      throw new Error('Invalid date');
-    }
-    
-    // Convert to New York timezone
-    return new Date(date.toLocaleString('en-US', { timeZone: 'America/New_York' })).toISOString();
+    // Use the improved date utilities for consistent timezone handling
+    // Works with existing TEXT date fields in database
+    return formatDateForTextDatabase(value);
   } catch (error) {
     console.error('Error formatting date:', error);
     throw new Error('Invalid date format');
@@ -179,7 +170,8 @@ export const getProductionEntries = async (): Promise<ProductionEntry[]> => {
     
     return (data || []).map(entry => ({
       ...entry,
-      date: new Date(entry.date) // Date is already in EST from storage
+      date: parseDateFromDatabase(entry.date), // Parse TEXT date and convert to Eastern timezone
+      expiration_date: parseDateFromDatabase(entry.expiration_date)
     }))
   } catch (err) {
     throw handleSupabaseError(err)
@@ -190,9 +182,9 @@ export const createProductionEntry = async (entry: Omit<ProductionEntry, "id">):
   try {
     const supabase = createServerSupabaseClient()
     
-    // Create current timestamp in New York timezone
-    const now = new Date();
-    const newYorkTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    // Use the improved date utilities for consistent US Eastern timezone handling
+    // Works with existing TEXT date fields in database
+    const easternTimestamp = createEasternTimestamp();
     
     const { data, error } = await supabase
       .from('production_entries')
@@ -204,7 +196,7 @@ export const createProductionEntry = async (entry: Omit<ProductionEntry, "id">):
         quantity: entry.quantity,
         shift: entry.shift,
         expiration_date: formatDateValue(entry.expiration_date),
-        created_at: newYorkTime.toISOString()
+        created_at: easternTimestamp
       })
       .select()
       .single()
@@ -213,9 +205,9 @@ export const createProductionEntry = async (entry: Omit<ProductionEntry, "id">):
     
     return {
       ...data,
-      date: new Date(data.date),
-      expiration_date: data.expiration_date,
-      created_at: new Date(data.created_at)
+      date: parseDateFromDatabase(data.date),
+      expiration_date: parseDateFromDatabase(data.expiration_date),
+      created_at: parseDateFromDatabase(data.created_at)
     }
   } catch (err) {
     throw handleSupabaseError(err)
@@ -266,7 +258,7 @@ export const getDisposalEntries = async (): Promise<DisposalEntry[]> => {
     
     return (data || []).map(entry => ({
       ...entry,
-      date: new Date(entry.date) // Date is already in EST from storage
+      date: parseDateFromDatabase(entry.date) // Parse TEXT date and convert to Eastern timezone
     }))
   } catch (err) {
     throw handleSupabaseError(err)
@@ -277,9 +269,9 @@ export const createDisposalEntry = async (entry: Omit<DisposalEntry, "id">): Pro
   try {
     const supabase = createServerSupabaseClient()
     
-    // Create current timestamp in New York timezone
-    const now = new Date();
-    const newYorkTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    // Use the improved date utilities for consistent US Eastern timezone handling
+    // Works with existing TEXT date fields in database
+    const easternTimestamp = createEasternTimestamp();
     
     const { data, error } = await supabase
       .from('disposal_entries')
@@ -292,7 +284,7 @@ export const createDisposalEntry = async (entry: Omit<DisposalEntry, "id">): Pro
         shift: entry.shift,
         reason: entry.reason,
         notes: entry.notes || null,
-        created_at: newYorkTime.toISOString()
+        created_at: easternTimestamp
       })
       .select()
       .single()
@@ -301,8 +293,8 @@ export const createDisposalEntry = async (entry: Omit<DisposalEntry, "id">): Pro
     
     return {
       ...data,
-      date: new Date(data.date),
-      created_at: new Date(data.created_at)
+      date: parseDateFromDatabase(data.date),
+      created_at: parseDateFromDatabase(data.created_at)
     }
   } catch (err) {
     throw handleSupabaseError(err)

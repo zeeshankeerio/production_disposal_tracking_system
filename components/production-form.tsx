@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import * as z from "zod"
-import { format } from "date-fns"
 import { CalendarIcon, InfoIcon, AlertTriangleIcon, Plus, Trash2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -43,7 +42,7 @@ import { Combobox, ComboboxOption } from "@/components/ui/combobox"
 import { SimpleDatePicker } from "@/components/ui/simple-date-picker"
 import { DatePickerWrapper } from "@/components/ui/date-picker-wrapper"
 import { DatePickerWrapper as ClientDatePicker } from "@/components/ui/client-pickers"
-import { prepareDateForSubmission, toEastern, fromEastern, formatEastern } from "@/lib/date-utils"
+import { prepareDateForSubmission, toEastern, fromEastern, formatDate } from "@/lib/date-utils"
 import { formatShift } from "@/lib/utils"
 
 const productionSchema = z.object({
@@ -78,8 +77,6 @@ type CommonFields = {
   shift: "morning" | "afternoon" | "night";
   staff_name: string;
 }
-
-const NEW_YORK_TIMEZONE = 'America/New_York';
 
 export function ProductionForm() {
   const { addProductionEntry, products, refreshData, isLoading: isDataLoading } = useData()
@@ -132,8 +129,8 @@ export function ProductionForm() {
 
     // 2. Define a safe/fallback default
     const safeExpirationDate = (rawExpirationDate !== undefined && rawExpirationDate !== null)
-      ? new Date(rawExpirationDate)
-      : new Date(new Date().setDate(new Date().getDate() + 7)); // Default to 7 days from now
+      ? toEastern(new Date(rawExpirationDate))
+      : toEastern(new Date(new Date().setDate(new Date().getDate() + 7))); // Default to 7 days from now
 
     // 3. Validate the safe date
     if (isNaN(safeExpirationDate.getTime())) {
@@ -151,7 +148,7 @@ export function ProductionForm() {
       product_name: data.product_name,
       quantity: data.quantity,
       notes: data.notes,
-      expiration_date: safeExpirationDate.toISOString().split('T')[0], // Format as YYYY-MM-DD string
+      expiration_date: safeExpirationDate.toISOString(),
     }
 
     // Debug log to check new entry
@@ -165,7 +162,7 @@ export function ProductionForm() {
       product_name: "",
       quantity: 0,
       notes: "",
-      expiration_date: new Date(new Date().setDate(new Date().getDate() + 7)),
+      expiration_date: toEastern(new Date(new Date().setDate(new Date().getDate() + 7))),
     })
     
     // Clear selected product
@@ -271,7 +268,7 @@ export function ProductionForm() {
           date: productionDate, // Keep as Date object in EST
           shift: commonFields.shift,
           staff_name: commonFields.staff_name,
-          expiration_date: expirationDate.toISOString().split('T')[0], // Convert to YYYY-MM-DD string
+          expiration_date: expirationDate.toISOString(),
           notes: entry.notes || "",
         }
 
@@ -329,52 +326,6 @@ export function ProductionForm() {
   const selectedProductDetails = selectedProduct 
     ? products.find(p => p.name === selectedProduct) 
     : null
-
-  // Safe date formatting with comprehensive error handling
-  const formatDate = (dateString: string | undefined | null): string => {
-    try {
-      // Debug log to check input
-      console.log("Formatting date:", dateString);
-
-      // Handle undefined or null
-      if (!dateString) {
-        console.warn("Date string is undefined or null");
-        return "No date";
-      }
-
-      const date = new Date(dateString);
-      
-      // Validate date
-      if (isNaN(date.getTime())) {
-        console.warn("Invalid date:", dateString);
-        return "Invalid date";
-      }
-
-      // Convert to New York timezone
-      const newYorkDate = new Date(date.toLocaleString('en-US', { timeZone: NEW_YORK_TIMEZONE }));
-
-      // Format the date
-      return formatEastern(newYorkDate, "MMM dd, yyyy");
-    } catch (error) {
-      console.error("Error formatting date:", error, "Input:", dateString);
-      return "Invalid date";
-    }
-  };
-
-  // Safe date validation
-  const isValidDate = (date: any): boolean => {
-    if (!date) return false;
-    try {
-      const d = new Date(date);
-      if (isNaN(d.getTime())) return false;
-      
-      // Convert to New York timezone for validation
-      const newYorkDate = new Date(d.toLocaleString('en-US', { timeZone: NEW_YORK_TIMEZONE }));
-      return !isNaN(newYorkDate.getTime());
-    } catch (error) {
-      return false;
-    }
-  };
 
   return (
     <Card className="w-full">
@@ -575,21 +526,6 @@ export function ProductionForm() {
                 // Debug log for each entry
                 console.log("Rendering cart entry:", entry);
 
-                // 1. Capture potentially undefined value
-                const rawExpirationDate = entry.expiration_date;
-
-                // 2. Define a safe/fallback default
-                const safeExpirationDate = (rawExpirationDate !== undefined && rawExpirationDate !== null)
-                  ? new Date(rawExpirationDate)
-                  : new Date(0); // Default to Unix epoch
-
-                // 3. Format the date safely
-                const formattedExpirationDate = safeExpirationDate.toLocaleString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric'
-                });
-
                 return (
                   <div
                     key={entry.id}
@@ -598,7 +534,7 @@ export function ProductionForm() {
                     <div className="flex-1">
                       <p className="font-medium">{entry.product_name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {entry.quantity} units • Shift: {formatShift(commonFields.shift)} • Expires: {formattedExpirationDate}
+                        {entry.quantity} units • Expires: {formatDate(entry.expiration_date, "MMM d, yyyy")}
                       </p>
                       {entry.notes && (
                         <p className="text-sm text-muted-foreground">

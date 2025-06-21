@@ -46,7 +46,14 @@ export const saveProductsToStorage = () => {
 function getRandomDate(daysBack = 30) {
   const date = new Date()
   date.setDate(date.getDate() - Math.floor(Math.random() * daysBack))
-  return date
+  // Ensure the date is in Eastern timezone for consistency
+  return new Date(date.toLocaleString('en-US', { timeZone: 'America/New_York' }))
+}
+
+// Generate a date for today in Eastern timezone
+function getTodayDate() {
+  const today = new Date()
+  return new Date(today.toLocaleString('en-US', { timeZone: 'America/New_York' }))
 }
 
 // Generate random notes
@@ -96,6 +103,10 @@ export function generateProductionEntries(count = 50): ProductionEntry[] {
     const product = products[productIndex]
     const date = getRandomDate()
     
+    // Generate expiration date (7-14 days from production date)
+    const expirationDate = new Date(date)
+    expirationDate.setDate(expirationDate.getDate() + 7 + Math.floor(Math.random() * 7))
+    
     entries.push({
       id: uuidv4(),
       product_name: product.name,
@@ -104,6 +115,7 @@ export function generateProductionEntries(count = 50): ProductionEntry[] {
       date,
       quantity: 10 + Math.floor(Math.random() * 90),
       shift: shifts[Math.floor(Math.random() * shifts.length)],
+      expiration_date: expirationDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
       notes: getRandomNotes()
     })
   }
@@ -144,6 +156,20 @@ export function generateDisposalEntries(count = 20): DisposalEntry[] {
       notes: getRandomDisposalNotes(reason)
     })
   }
+  
+  // Always add at least one disposal entry for today
+  const todayProduct = products[0]
+  entries.push({
+    id: uuidv4(),
+    product_name: todayProduct.name,
+    product_id: todayProduct.id,
+    staff_name: "Today Test",
+    date: getTodayDate(),
+    quantity: 15,
+    shift: "morning",
+    reason: "Test disposal for today",
+    notes: "This is a test disposal entry for today to ensure it shows up in the dashboard"
+  })
   
   return entries
 } 

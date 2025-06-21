@@ -24,6 +24,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, FileDown, FileText } from "lucide-react"
 import { CopyrightFooter } from "@/components/copyright-footer"
 import { QuickNav } from "@/components/quick-nav"
+import { DigitalClock } from "@/components/digital-clock"
 import { toEastern } from '@/lib/date-utils'
 
 // Custom tooltip component to handle all tooltip rendering
@@ -181,26 +182,46 @@ export default function DashboardPage() {
       // Apply date filter
       if (!dateRange?.from) return matchesProduct && matchesCategory;
 
-      // Convert entry date to Eastern timezone
-      const entryDate = toEastern(new Date(entry.date));
-      if (isNaN(entryDate.getTime())) return false;
+      try {
+        // Convert entry date to Eastern timezone
+        const entryDate = toEastern(new Date(entry.date));
+        if (isNaN(entryDate.getTime())) {
+          console.warn("Invalid production entry date:", entry.date, entry.id);
+          return false;
+        }
 
-      // Convert range dates to Eastern timezone
-      const startDate = toEastern(new Date(dateRange.from));
-      startDate.setHours(0, 0, 0, 0);
+        // Convert range dates to Eastern timezone
+        const startDate = toEastern(new Date(dateRange.from));
+        startDate.setHours(0, 0, 0, 0);
 
-      const endDate = dateRange.to ? toEastern(new Date(dateRange.to)) : startDate;
-      endDate.setHours(23, 59, 59, 999);
+        const endDate = dateRange.to ? toEastern(new Date(dateRange.to)) : startDate;
+        endDate.setHours(23, 59, 59, 999);
 
-      // Check if entry date falls within the range
-      const isInDateRange = isWithinInterval(entryDate, {
-        start: startDate,
-        end: endDate
-      });
+        // Check if entry date falls within the range
+        const isInDateRange = isWithinInterval(entryDate, {
+          start: startDate,
+          end: endDate
+        });
 
-      return matchesProduct && matchesCategory && isInDateRange;
+        // Debug logging for today filter
+        if (activeView === "today") {
+          console.log("Production entry date check:", {
+            entryId: entry.id,
+            entryDate: entryDate.toISOString(),
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            isInRange: isInDateRange,
+            product: entry.product_name
+          });
+        }
+
+        return matchesProduct && matchesCategory && isInDateRange;
+      } catch (error) {
+        console.error("Error filtering production entry:", error, entry);
+        return false;
+      }
     });
-  }, [productionEntries, dateRange, selectedProduct, selectedCategory, products]);
+  }, [productionEntries, dateRange, selectedProduct, selectedCategory, products, activeView]);
   
   const filteredDisposalEntries = useMemo(() => {
     return disposalEntries.filter(entry => {
@@ -211,26 +232,47 @@ export default function DashboardPage() {
       // Apply date filter
       if (!dateRange?.from) return matchesProduct && matchesReason;
 
-      // Convert entry date to Eastern timezone
-      const entryDate = toEastern(new Date(entry.date));
-      if (isNaN(entryDate.getTime())) return false;
+      try {
+        // Convert entry date to Eastern timezone
+        const entryDate = toEastern(new Date(entry.date));
+        if (isNaN(entryDate.getTime())) {
+          console.warn("Invalid disposal entry date:", entry.date, entry.id);
+          return false;
+        }
 
-      // Convert range dates to Eastern timezone
-      const startDate = toEastern(new Date(dateRange.from));
-      startDate.setHours(0, 0, 0, 0);
+        // Convert range dates to Eastern timezone
+        const startDate = toEastern(new Date(dateRange.from));
+        startDate.setHours(0, 0, 0, 0);
 
-      const endDate = dateRange.to ? toEastern(new Date(dateRange.to)) : startDate;
-      endDate.setHours(23, 59, 59, 999);
+        const endDate = dateRange.to ? toEastern(new Date(dateRange.to)) : startDate;
+        endDate.setHours(23, 59, 59, 999);
 
-      // Check if entry date falls within the range
-      const isInDateRange = isWithinInterval(entryDate, {
-        start: startDate,
-        end: endDate
-      });
+        // Check if entry date falls within the range
+        const isInDateRange = isWithinInterval(entryDate, {
+          start: startDate,
+          end: endDate
+        });
 
-      return matchesProduct && matchesReason && isInDateRange;
+        // Debug logging for today filter
+        if (activeView === "today") {
+          console.log("Disposal entry date check:", {
+            entryId: entry.id,
+            entryDate: entryDate.toISOString(),
+            startDate: startDate.toISOString(),
+            endDate: endDate.toISOString(),
+            isInRange: isInDateRange,
+            product: entry.product_name,
+            reason: entry.reason
+          });
+        }
+
+        return matchesProduct && matchesReason && isInDateRange;
+      } catch (error) {
+        console.error("Error filtering disposal entry:", error, entry);
+        return false;
+      }
     });
-  }, [disposalEntries, dateRange, selectedProduct, selectedReason]);
+  }, [disposalEntries, dateRange, selectedProduct, selectedReason, activeView]);
 
   // Calculate shift distribution data
   const productionShiftChartData = useMemo(() => {
@@ -612,6 +654,9 @@ export default function DashboardPage() {
           <p className="text-muted-foreground">
             Analytics and performance metrics
           </p>
+        </div>
+        <div className="shrink-0">
+          <DigitalClock />
         </div>
       </div>
       

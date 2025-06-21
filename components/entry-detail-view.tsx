@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from "@/components/ui/badge"
 import { format } from "date-fns"
 import { ProductionEntry, DisposalEntry } from "@/lib/types"
-import { formatNumber } from "@/lib/utils"
+import { formatNumber, formatDate } from "@/lib/utils"
 import { BarChart3, Calendar, CheckCircle, Clock, FileText, InfoIcon, Trash2, User, ChevronDown, ChevronUp, ClipboardCopy, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useToast } from "@/components/ui/use-toast"
@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { formatEastern } from "@/lib/date-utils"
+import { toEastern } from "@/lib/date-utils"
 
 interface EntryDetailViewProps {
   entry: ProductionEntry | DisposalEntry
@@ -196,8 +196,8 @@ export function EntryDetailView({ entry, type }: EntryDetailViewProps) {
                     <Calendar className="h-4 w-4" />
                     <span>
                       {entry.created_at 
-                        ? formatEastern(entry.created_at, "PPP p")
-                        : formatEastern(entry.date, "PPP p")}
+                        ? formatDate(entry.created_at, "PPP p")
+                        : formatDate(entry.date, "PPP p")}
                     </span>
                   </div>
                 </div>

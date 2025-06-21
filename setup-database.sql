@@ -12,12 +12,12 @@ CREATE TABLE IF NOT EXISTS public.products (
 CREATE TABLE IF NOT EXISTS public.production_entries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   staff_name TEXT NOT NULL,
-  date TEXT NOT NULL,
+  date TIMESTAMP WITH TIME ZONE NOT NULL,
   product_id UUID NOT NULL REFERENCES public.products(id),
   product_name TEXT NOT NULL,
   quantity NUMERIC(10, 2) NOT NULL,
   shift TEXT NOT NULL,
-  expiration_date TEXT NOT NULL,
+  expiration_date TIMESTAMP WITH TIME ZONE NOT NULL,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS public.production_entries (
 CREATE TABLE IF NOT EXISTS public.disposal_entries (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   staff_name TEXT NOT NULL,
-  date TEXT NOT NULL,
+  date TIMESTAMP WITH TIME ZONE NOT NULL,
   product_id UUID NOT NULL REFERENCES public.products(id),
   product_name TEXT NOT NULL,
   quantity NUMERIC(10, 2) NOT NULL,
@@ -67,7 +67,7 @@ INSERT INTO public.products (name, category, description, unit) VALUES
 WITH product_ids AS (
   SELECT id, name FROM public.products
 )
--- Add sample production entries
+-- Add sample production entries with proper timestamp handling
 INSERT INTO public.production_entries (
   staff_name, date, product_id, product_name, 
   quantity, shift, expiration_date
@@ -78,7 +78,7 @@ SELECT
     WHEN MOD(s.n, 3) = 1 THEN 'João Oliveira'
     ELSE 'Ana Santos'
   END,
-  TO_CHAR(CURRENT_DATE - (RANDOM() * 30)::integer, 'YYYY-MM-DD'),
+  (CURRENT_DATE - (RANDOM() * 30)::integer)::timestamp with time zone,
   p.id,
   p.name,
   ROUND((RANDOM() * 100)::numeric, 2),
@@ -87,7 +87,7 @@ SELECT
     WHEN RANDOM() > 0.33 THEN 'afternoon'
     ELSE 'night' 
   END,
-  TO_CHAR(CURRENT_DATE + (RANDOM() * 10)::integer, 'YYYY-MM-DD')
+  (CURRENT_DATE + (RANDOM() * 10)::integer)::timestamp with time zone
 FROM product_ids p
 CROSS JOIN generate_series(1, 3) AS s(n);
 
@@ -95,7 +95,7 @@ CROSS JOIN generate_series(1, 3) AS s(n);
 WITH product_ids AS (
   SELECT id, name FROM public.products
 )
--- Add sample disposal entries
+-- Add sample disposal entries with proper timestamp handling
 INSERT INTO public.disposal_entries (
   staff_name, date, product_id, product_name, 
   quantity, shift, reason, notes
@@ -106,7 +106,7 @@ SELECT
     WHEN MOD(s.n, 3) = 1 THEN 'Luiza Costa'
     ELSE 'Roberto Alves'
   END,
-  TO_CHAR(CURRENT_DATE - (RANDOM() * 30)::integer, 'YYYY-MM-DD'),
+  (CURRENT_DATE - (RANDOM() * 30)::integer)::timestamp with time zone,
   p.id,
   p.name,
   ROUND((RANDOM() * 20)::numeric, 2),

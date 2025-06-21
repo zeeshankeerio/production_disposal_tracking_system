@@ -3,8 +3,7 @@ import { twMerge } from "tailwind-merge"
 import { format } from "date-fns"
 import { UI_CONFIG } from "@/lib/config"
 import { formatEastern } from '@/lib/date-utils'
-
-const NEW_YORK_TIMEZONE = 'America/New_York';
+import { formatDate as formatDateWithTimezone } from './date-utils'
 
 /**
  * Combines multiple class names into a single string using clsx and tailwind-merge
@@ -15,9 +14,10 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Formats a date string with flexible output formatting
+ * Always displays in US Eastern Time to match the digital clock
  * @param dateString - The date string to format
  * @param formatType - Optional format type: 'date', 'time', 'datetime', or custom format string
- * @returns Formatted date string
+ * @returns Formatted date string in Eastern time
  */
 export function formatDate(
   dateString: string | Date | undefined | null, 
@@ -32,7 +32,24 @@ export function formatDate(
       return "No date"
     }
     
-    const date = typeof dateString === 'string' ? new Date(dateString) : dateString
+    let date: Date;
+    
+    // If it's a string, handle it as potentially being in Eastern time format
+    if (typeof dateString === 'string') {
+      // Check if it's in the format "YYYY-MM-DD HH:MM:SS" (our stored format)
+      const match = dateString.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
+      if (match) {
+        // Parse as if it's in Eastern time
+        const [_, year, month, day, hour, minute, second] = match;
+        // Create a Date object and treat it as Eastern time
+        date = new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second));
+      } else {
+        // Try parsing as regular date string
+        date = new Date(dateString);
+      }
+    } else {
+      date = dateString;
+    }
     
     // Check if date is valid
     if (!(date instanceof Date) || isNaN(date.getTime())) {
@@ -40,24 +57,64 @@ export function formatDate(
       return "Invalid date"
     }
     
-    // Convert to New York timezone
-    const newYorkDate = new Date(date.toLocaleString('en-US', { timeZone: NEW_YORK_TIMEZONE }));
+    // Always display in Eastern timezone to match the digital clock
+    const easternTime = date.toLocaleString('en-US', { timeZone: 'America/New_York' });
+    const easternDate = new Date(easternTime);
     
     // Handle predefined format types
     if (formatType === 'date') {
-      return formatEastern(newYorkDate, 'MM/dd/yyyy')
+      return easternDate.toLocaleDateString('en-US', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
     }
     
     if (formatType === 'time') {
-      return formatEastern(newYorkDate, 'HH:mm')
+      return easternDate.toLocaleTimeString('en-US', {
+        timeZone: 'America/New_York',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
     }
     
     if (formatType === 'datetime') {
-      return formatEastern(newYorkDate, 'MM/dd/yyyy HH:mm')
+      return easternDate.toLocaleString('en-US', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
     }
     
-    // Use date-fns for custom format strings
-    return formatEastern(newYorkDate, formatType || UI_CONFIG?.DATE_FORMAT || 'PPP')
+    // Handle custom format strings (like "PPP p" from date-fns)
+    if (formatType === 'PPP p') {
+      return easternDate.toLocaleString('en-US', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      });
+    }
+    
+    // Default format
+    return easternDate.toLocaleString('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
   } catch (error) {
     console.error("Error formatting date:", error)
     return "Invalid date"
@@ -126,10 +183,9 @@ export function calculatePercentage(
  * Format date as YYYY-MM-DD for filenames
  */
 function formatDateForFilename(date: Date): string {
-  const newYorkDate = new Date(date.toLocaleString('en-US', { timeZone: NEW_YORK_TIMEZONE }));
-  const year = newYorkDate.getFullYear();
-  const month = String(newYorkDate.getMonth() + 1).padStart(2, '0');
-  const day = String(newYorkDate.getDate()).padStart(2, '0');
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 

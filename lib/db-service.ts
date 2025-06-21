@@ -3,7 +3,7 @@
 import { createServerSupabaseClient } from "./supabase"
 import type { Product, ProductionEntry, DisposalEntry } from "./types"
 import { mapProductFromDB, mapProductionEntryFromDB, mapDisposalEntryFromDB } from "./utils"
-import { getCurrentEasternTime, prepareDateForSubmission } from "./date-utils"
+import { getCurrentEasternTime, prepareDateForSubmission, formatDateForDatabase, createEasternTimestamp, formatDateForTextDatabase } from "./date-utils"
 
 // Utility function to check if a table exists
 async function checkTableExists(tableName: string): Promise<boolean> {
@@ -104,21 +104,23 @@ export async function addProductionEntry(entry: Omit<ProductionEntry, "id" | "cr
   const supabase = createServerSupabaseClient()
 
   try {
-    // Get the exact current time in New York timezone
-    const now = new Date();
-    const newYorkTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    // Use the improved date utilities for consistent US Eastern timezone handling
+    // Works with existing TEXT date fields in database
+    const easternTimestamp = createEasternTimestamp();
+    const formattedDate = formatDateForTextDatabase(entry.date);
+    const formattedExpirationDate = formatDateForTextDatabase(entry.expiration_date);
     
     const { data, error } = await supabase
       .from("production_entries")
       .insert({
         staff_name: entry.staff_name,
-        date: prepareDateForSubmission(entry.date),
+        date: formattedDate,
         product_id: entry.product_id,
         product_name: entry.product_name,
         quantity: entry.quantity,
         shift: entry.shift,
-        expiration_date: entry.expiration_date,
-        created_at: newYorkTime.toISOString()
+        expiration_date: formattedExpirationDate,
+        created_at: easternTimestamp
       })
       .select()
       .single()
@@ -154,22 +156,23 @@ export async function addDisposalEntry(entry: Omit<DisposalEntry, "id" | "create
   const supabase = createServerSupabaseClient()
 
   try {
-    // Get the exact current time in New York timezone
-    const now = new Date();
-    const newYorkTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
+    // Use the improved date utilities for consistent US Eastern timezone handling
+    // Works with existing TEXT date fields in database
+    const easternTimestamp = createEasternTimestamp();
+    const formattedDate = formatDateForTextDatabase(entry.date);
     
     const { data, error } = await supabase
       .from("disposal_entries")
       .insert({
         staff_name: entry.staff_name,
-        date: prepareDateForSubmission(entry.date),
+        date: formattedDate,
         product_id: entry.product_id,
         product_name: entry.product_name,
         quantity: entry.quantity,
         shift: entry.shift,
         reason: entry.reason,
         notes: entry.notes,
-        created_at: newYorkTime.toISOString()
+        created_at: easternTimestamp
       })
       .select()
       .single()

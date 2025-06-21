@@ -1,3 +1,5 @@
+import { parseDateFromDatabase } from './date-utils'
+
 export type ProductCategory = "Pães" | "Confeitaria" | "Salgados" | "Bolos" | "Outros"
 
 export type Shift = "morning" | "afternoon" | "night"
@@ -55,7 +57,7 @@ export interface DataContextType {
   isLoading: boolean
   error: string | null
   addProductionEntry: (entry: Omit<ProductionEntry, "id">) => Promise<void>
-  addDisposalEntry: (entry: DisposalEntry) => Promise<void>
+  addDisposalEntry: (entry: Omit<DisposalEntry, "id">) => Promise<void>
   addProduct: (product: Omit<Product, "id">) => Promise<Product>
   updateProduct: (product: Product) => Promise<Product>
   deleteProduct: (id: string) => Promise<void>
@@ -171,14 +173,13 @@ export function mapProductionEntryFromDB(entry: any): ProductionEntry {
   return {
     id: entry.id || '',
     staff_name: entry.staff_name || '',
-    date: entry.date ? new Date(entry.date) : new Date(),
+    date: parseDateFromDatabase(entry.date),
     product_name: entry.product_name || '',
     product_id: entry.product_id || '',
     quantity: typeof entry.quantity === 'number' ? entry.quantity : 0,
     shift: entry.shift as Shift || 'morning',
-    notes: entry.notes || undefined,
     expiration_date: entry.expiration_date || '',
-    created_at: entry.created_at ? new Date(entry.created_at) : undefined,
+    created_at: parseDateFromDatabase(entry.created_at),
   }
 }
 
@@ -190,14 +191,14 @@ export function mapDisposalEntryFromDB(entry: any): DisposalEntry {
   return {
     id: entry.id || '',
     staff_name: entry.staff_name || '',
-    date: entry.date ? new Date(entry.date) : new Date(),
+    date: parseDateFromDatabase(entry.date),
     product_name: entry.product_name || '',
     product_id: entry.product_id || '',
     quantity: typeof entry.quantity === 'number' ? entry.quantity : 0,
     shift: entry.shift as Shift || 'morning',
     reason: entry.reason || '',
     notes: entry.notes || undefined,
-    created_at: entry.created_at ? new Date(entry.created_at) : undefined,
+    created_at: parseDateFromDatabase(entry.created_at),
   }
 }
 

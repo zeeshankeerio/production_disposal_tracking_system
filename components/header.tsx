@@ -7,6 +7,7 @@ import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
+import { DigitalClock } from "@/components/digital-clock"
 
 export function Header() {
   const { theme, setTheme } = useTheme()
@@ -44,13 +45,18 @@ export function Header() {
       )}
     >
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           <Link href="/" className="flex items-center space-x-2">
             <div className="relative w-8 h-8 overflow-hidden rounded-full bg-primary flex items-center justify-center">
               <BarChart2 className="h-5 w-5 text-primary-foreground" />
             </div>
             <span className="font-bold text-xl hidden sm:inline-block">Padokka Analytics</span>
           </Link>
+          
+          {/* Digital Clock */}
+          <div className="hidden lg:block">
+            <DigitalClock showDate={true} showSeconds={true} />
+          </div>
         </div>
 
         {/* Desktop Navigation */}
@@ -79,6 +85,11 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
+          {/* Compact Digital Clock for smaller screens */}
+          <div className="hidden md:block lg:hidden">
+            <DigitalClock showDate={false} showSeconds={false} />
+          </div>
+          
           <Button variant="ghost" size="icon" aria-label="Toggle Theme" className="mr-2" onClick={toggleTheme}>
             {theme === "dark" ? <SunIcon className="h-5 w-5" /> : <MoonIcon className="h-5 w-5" />}
           </Button>

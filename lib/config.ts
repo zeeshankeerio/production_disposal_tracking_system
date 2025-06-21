@@ -42,8 +42,29 @@ export const DASHBOARD_REFRESH_INTERVAL = 60 * 1000
 // Number of items to show in the recent entries lists
 export const RECENT_ENTRIES_LIMIT = 5
 
-// Date format for the application
-export const DATE_FORMAT = "yyyy-MM-dd"
+// Timezone configuration
+export const DEFAULT_TIMEZONE = 'America/New_York'; // Force US Eastern timezone for testing
+export const DATE_FORMAT = "yyyy-MM-dd";
+
+// Format options for different date display styles
+export const DATE_FORMAT_OPTIONS = {
+  short: {
+    month: 'numeric' as const,
+    day: 'numeric' as const,
+    year: '2-digit' as const,
+  },
+  medium: {
+    month: 'short' as const,
+    day: 'numeric' as const,
+    year: 'numeric' as const,
+  },
+  long: {
+    weekday: 'long' as const,
+    month: 'long' as const,
+    day: 'numeric' as const,
+    year: 'numeric' as const,
+  }
+};
 
 // Default chart colors
 export const CHART_COLORS = {

@@ -33,7 +33,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { format } from "date-fns"
 import { useData } from "@/components/providers/data-provider"
 import { useToast } from "@/components/ui/use-toast"
-import { formatEastern } from "@/lib/date-utils"
 
 interface PageRecentEntriesProps {
   title: string
@@ -43,8 +42,6 @@ interface PageRecentEntriesProps {
   showFilters?: boolean
   allowDelete?: boolean
 }
-
-const NEW_YORK_TIMEZONE = 'America/New_York';
 
 export function PageRecentEntries({
   title,
@@ -303,9 +300,11 @@ export function PageRecentEntries({
                   console.warn("Invalid date in entry:", entry.id, entry.date);
                   formattedDate = 'Invalid date';
                 } else {
-                  // Convert to New York timezone
-                  const newYorkDate = new Date(safeDate.toLocaleString('en-US', { timeZone: NEW_YORK_TIMEZONE }));
-                  formattedDate = formatEastern(newYorkDate, "MMM dd, yyyy");
+                  formattedDate = safeDate.toLocaleString('en-US', {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  });
                 }
               }
             } catch (error) {

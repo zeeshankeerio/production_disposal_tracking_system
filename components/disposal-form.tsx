@@ -43,10 +43,8 @@ import { Combobox, ComboboxOption } from "@/components/ui/combobox"
 import { SimpleDatePicker } from "@/components/ui/simple-date-picker"
 import { DatePickerWrapper } from "@/components/ui/date-picker-wrapper"
 import { DatePickerWrapper as ClientDatePicker } from "@/components/ui/client-pickers"
-import { prepareDateForSubmission, formatEastern } from "@/lib/date-utils"
+import { prepareDateForSubmission, toEastern, fromEastern, formatDate } from "@/lib/date-utils"
 import { formatShift } from "@/lib/utils"
-
-const NEW_YORK_TIMEZONE = 'America/New_York';
 
 // Common disposal reasons
 const DISPOSAL_REASONS = [
@@ -67,7 +65,7 @@ const disposalSchema = z.object({
     required_error: "Date is required",
   }).refine((date) => {
     // Ensure date is not in the future
-    const today = new Date()
+    const today = toEastern(new Date())
     today.setHours(23, 59, 59, 999)
     return date <= today
   }, "Date cannot be in the future"),
@@ -97,22 +95,6 @@ type CommonFields = {
   staff_name: string;
 }
 
-// Update the formatDate function to handle both Date and string types
-const formatDate = (date: Date | string | undefined): string => {
-  if (!date) return "N/A"
-  try {
-    const dateObj = typeof date === "string" ? new Date(date) : date
-    if (isNaN(dateObj.getTime())) return "Invalid Date"
-    
-    // Convert to New York timezone
-    const newYorkDate = new Date(dateObj.toLocaleString('en-US', { timeZone: NEW_YORK_TIMEZONE }));
-    return formatEastern(newYorkDate, "MMM dd, yyyy HH:mm")
-  } catch (error) {
-    console.error("Error formatting date:", error)
-    return "Invalid Date"
-  }
-}
-
 export function DisposalForm() {
   const { addDisposalEntry, products, refreshData, isLoading: isDataLoading } = useData()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -120,7 +102,7 @@ export function DisposalForm() {
   const [selectedReasons, setSelectedReasons] = useState<string[]>([])
   const [cartEntries, setCartEntries] = useState<CartEntry[]>([])
   const [commonFields, setCommonFields] = useState<CommonFields>({
-    date: new Date(),
+    date: toEastern(new Date()),
     shift: "morning",
     staff_name: "",
   })
@@ -131,7 +113,7 @@ export function DisposalForm() {
     defaultValues: {
       product_name: "",
       quantity: 0,
-      date: new Date(),
+      date: toEastern(new Date()),
       shift: "morning",
       staff_name: commonFields.staff_name,
       reason: "",
@@ -180,7 +162,7 @@ export function DisposalForm() {
     }
 
     // Validate date
-    const disposalDate = data.date ? new Date(data.date) : new Date()
+    const disposalDate = data.date ? toEastern(new Date(data.date)) : toEastern(new Date())
     if (isNaN(disposalDate.getTime())) {
       toast({
         title: "Error",
@@ -196,7 +178,7 @@ export function DisposalForm() {
       quantity: quantity,
       reason: data.reason,
       notes: data.notes,
-      date: disposalDate.toISOString().split('T')[0], // Format as YYYY-MM-DD string
+      date: disposalDate.toISOString(), // Format as YYYY-MM-DD string
     }
 
     setCartEntries([...cartEntries, newEntry])
@@ -312,19 +294,18 @@ export function DisposalForm() {
           throw new Error("Invalid quantity value")
         }
 
-        // Validate date
-        const disposalDate = commonFields.date ? new Date(commonFields.date) : null
+        // Validate dates in EST
+        const disposalDate = commonFields.date ? toEastern(new Date(commonFields.date)) : null
         if (!disposalDate || isNaN(disposalDate.getTime())) {
           throw new Error("Invalid disposal date")
         }
 
-        // Create the disposal entry with common fields and a temporary ID
-        const disposalEntry = {
-          id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Add temporary ID
+        // Create the disposal entry with common fields
+        const disposalEntry: Omit<DisposalEntry, "id" | "created_at"> = {
           product_id: selectedProductData.id,
           product_name: entry.product_name,
           quantity: quantity,
-          date: disposalDate.toISOString().split('T')[0], // Format as YYYY-MM-DD
+          date: prepareDateForSubmission(disposalDate),
           shift: commonFields.shift,
           staff_name: commonFields.staff_name,
           reason: entry.reason,
@@ -343,7 +324,7 @@ export function DisposalForm() {
       form.reset({
         product_name: "",
         quantity: 0,
-        date: new Date(),
+        date: toEastern(new Date()),
         shift: "morning",
         staff_name: "",
         reason: "",
@@ -597,7 +578,7 @@ export function DisposalForm() {
             </div>
             <div className="space-y-2">
               {cartEntries.map((entry) => {
-                const formattedDate = formatDate(commonFields.date)
+                const formattedDate = formatDate(entry.date, "MMM dd, yyyy HH:mm")
                 
                 return (
                   <div
