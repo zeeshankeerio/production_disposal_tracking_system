@@ -5,11 +5,11 @@ import type { Product, ProductionEntry, DisposalEntry, ProductCategory } from ".
 
 // Mock products data
 const mockProducts: Product[] = [
-  { id: "p1", name: "Pão Francês", category: "Other" },
-  { id: "p2", name: "Bolo de Chocolate", category: "Confeitaria" },
-  { id: "p3", name: "Croissant", category: "Other" },
-  { id: "p4", name: "Torta de Morango", category: "Confeitaria" },
-  { id: "p5", name: "Pão de Queijo", category: "Other" },
+  { id: "p1", name: "Pão Francês", category: "Pães", unit: "kg" },
+  { id: "p2", name: "Bolo de Chocolate", category: "Confeitaria", unit: "kg" },
+  { id: "p3", name: "Croissant", category: "Confeitaria", unit: "kg" },
+  { id: "p4", name: "Torta de Morango", category: "Confeitaria", unit: "kg" },
+  { id: "p5", name: "Pão de Queijo", category: "Salgados", unit: "kg" },
 ]
 
 // Local storage keys
@@ -62,13 +62,13 @@ export const useProductionEntries = () => {
   }, [entries])
 
   // Add a new production entry
-  const addEntry = (entry: Omit<ProductionEntry, "id" | "createdAt">) => {
-    const product = getProductById(entry.productId)
+  const addEntry = (entry: Omit<ProductionEntry, "id" | "created_at">) => {
+    const product = getProductById(entry.product_id)
     const newEntry: ProductionEntry = {
       ...entry,
       id: generateId(),
-      expirationDate: calculateExpirationDate(entry.date, product?.category || "Other"),
-      createdAt: new Date().toISOString(),
+      expiration_date: calculateExpirationDate(entry.date.toISOString().split("T")[0], (product?.category as ProductCategory) || "Outros"),
+      created_at: new Date(),
     }
     setEntries((prev) => [newEntry, ...prev])
     return newEntry
@@ -95,16 +95,16 @@ export const useDisposalEntries = () => {
   }, [entries])
 
   // Add a new disposal entry
-  const addEntry = (entry: Omit<DisposalEntry, "id" | "createdAt">) => {
+  const addDisposalEntry = (entry: Omit<DisposalEntry, "id" | "created_at">) => {
     const newEntry: DisposalEntry = {
       ...entry,
       id: generateId(),
-      createdAt: new Date().toISOString(),
+      created_at: new Date(),
     }
     setEntries((prev) => [newEntry, ...prev])
     return newEntry
   }
 
-  return { entries, addEntry }
+  return { entries, addDisposalEntry }
 }
 

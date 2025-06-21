@@ -6,13 +6,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { ProductionEntry, DisposalEntry } from "@/lib/types"
-import { Search, X, ArrowDown, ArrowUp, Filter, RefreshCw } from "lucide-react"
+import { Search, X, ArrowDown, ArrowUp, Filter, RefreshCw, FileText } from "lucide-react"
 import { EntryDetailView } from "@/components/entry-detail-view"
 import { format, subDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear } from "date-fns"
 import { useData } from "@/components/providers/data-provider"
 import { useToast } from "@/components/ui/use-toast"
 import { Pagination } from "@/components/ui/pagination"
 import { UI_CONFIG } from "@/lib/config"
+import { formatNumber, formatDate } from "@/lib/utils"
 
 interface EntriesListViewProps {
   entries: (ProductionEntry | DisposalEntry)[]
@@ -42,14 +43,14 @@ export function EntriesListView({
   const [dateFilter, setDateFilter] = useState<DateFilterType>("thisMonth")
   
   // From date states
-  const [fromDay, setFromDay] = useState<string>(format(new Date(), "dd"))
-  const [fromMonth, setFromMonth] = useState<string>(format(new Date(), "MM"))
-  const [fromYear, setFromYear] = useState<string>(format(new Date(), "yyyy"))
+  const [fromDay, setFromDay] = useState<string>(formatDate(new Date(), "dd"))
+  const [fromMonth, setFromMonth] = useState<string>(formatDate(new Date(), "MM"))
+  const [fromYear, setFromYear] = useState<string>(formatDate(new Date(), "yyyy"))
   
   // To date states
-  const [toDay, setToDay] = useState<string>(format(new Date(), "dd"))
-  const [toMonth, setToMonth] = useState<string>(format(new Date(), "MM"))
-  const [toYear, setToYear] = useState<string>(format(new Date(), "yyyy"))
+  const [toDay, setToDay] = useState<string>(formatDate(new Date(), "dd"))
+  const [toMonth, setToMonth] = useState<string>(formatDate(new Date(), "MM"))
+  const [toYear, setToYear] = useState<string>(formatDate(new Date(), "yyyy"))
   
   const { products, refreshData } = useData()
   const { toast } = useToast()
@@ -217,6 +218,113 @@ export function EntriesListView({
     }, 800)
   }
   
+  // Handle export to CSV
+  const handleExport = () => {
+    if (sortedEntries.length === 0) {
+      toast({
+        title: "No Data to Export",
+        description: "No entries match the current filters",
+        variant: "destructive"
+      })
+      return
+    }
+    
+    // Get headers based on entry type
+    const headers = type === "production" 
+      ? ["Product", "Category", "Quantity", "Date", "Staff", "Shift", "Notes", "Expiration Date"]
+      : ["Product", "Category", "Quantity", "Date", "Reason", "Staff", "Shift", "Notes"]
+    
+    // Convert data to CSV format
+    const csvRows = []
+    
+    // Add filter information at the top
+    csvRows.push("Export Filters")
+    if (selectedProduct !== "all") {
+      csvRows.push(`Product Filter: ${selectedProduct}`)
+    }
+    if (selectedCategory !== "all") {
+      csvRows.push(`Category Filter: ${selectedCategory}`)
+    }
+    if (type === "disposal" && isDisposalEntry(sortedEntries[0])) {
+      // Add disposal-specific filters if needed
+    }
+    csvRows.push(`Date Filter: ${dateFilter}`)
+    if (dateFilter === "custom") {
+      csvRows.push(`From: ${fromMonth}/${fromDay}/${fromYear}`)
+      csvRows.push(`To: ${toMonth}/${toDay}/${toYear}`)
+    }
+    csvRows.push(`Sort Order: ${sortOrder === "desc" ? "Newest First" : "Oldest First"}`)
+    csvRows.push("") // Empty row for spacing
+    
+    // Add summary information
+    csvRows.push("Summary")
+    csvRows.push(`Total Entries: ${sortedEntries.length}`)
+    csvRows.push("") // Empty row for spacing
+    
+    // Add the actual data with headers
+    csvRows.push(headers.join(','))
+    
+    for (const entry of sortedEntries) {
+      // Find the product's category
+      const product = products.find(p => p.name === entry.product_name)
+      const category = product?.category || "Unknown"
+      
+      const values = type === "production" 
+        ? [
+            entry.product_name,
+            category,
+            entry.quantity,
+            formatDate(entry.date, "short"),
+            entry.staff_name,
+            entry.shift || "",
+            entry.notes || "",
+            type === "production" && 'expiration_date' in entry ? formatDate(entry.expiration_date, "short") : ""
+          ]
+        : [
+            entry.product_name,
+            category,
+            entry.quantity,
+            formatDate(entry.date, "short"),
+            isDisposalEntry(entry) ? entry.reason : "",
+            entry.staff_name,
+            entry.shift || "",
+            entry.notes || ""
+          ]
+      
+      csvRows.push(values.map(value => typeof value === 'string' && value.includes(',') ? `"${value}"` : value).join(','))
+    }
+    
+    // Create downloadable link with UTF-8 BOM
+    const BOM = '\uFEFF'
+    const csvContent = BOM + csvRows.join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    
+    // Create filename with filter information
+    let filename = `${type}-entries`
+    if (selectedCategory !== "all") {
+      filename += `-${selectedCategory.toLowerCase().replace(/\s+/g, '-')}`
+    }
+    if (selectedProduct !== "all") {
+      filename += `-${selectedProduct.toLowerCase().replace(/\s+/g, '-')}`
+    }
+    filename += `-${formatDate(new Date(), "short")}.csv`
+    
+    link.setAttribute('href', url)
+    link.setAttribute('download', filename)
+    link.style.visibility = 'hidden'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    
+    toast({
+      title: "Export Successful",
+      description: `Exported ${sortedEntries.length} ${type} entries to CSV`,
+    })
+  }
+  
   return (
     <Card className="w-full dark:border-border/50">
       <CardHeader>
@@ -225,14 +333,25 @@ export function EntriesListView({
         <CardTitle>{title}</CardTitle>
         {description && <CardDescription>{description}</CardDescription>}
           </div>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-          >
-            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              disabled={sortedEntries.length === 0}
+            >
+              <FileText className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -337,7 +456,7 @@ export function EntriesListView({
                         <SelectContent>
                           {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
                             <SelectItem key={month} value={month.toString().padStart(2, '0')}>
-                              {format(new Date(2000, month - 1), 'MMMM')}
+                              {formatDate(new Date(2000, month - 1), 'MMMM')}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -396,7 +515,7 @@ export function EntriesListView({
                         <SelectContent>
                           {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
                             <SelectItem key={month} value={month.toString().padStart(2, '0')}>
-                              {format(new Date(2000, month - 1), 'MMMM')}
+                              {formatDate(new Date(2000, month - 1), 'MMMM')}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -434,12 +553,12 @@ export function EntriesListView({
                     setSelectedCategory("all")
                     setDateFilter("thisMonth")
                     const now = new Date()
-                    setFromDay(format(now, "dd"))
-                    setFromMonth(format(now, "MM"))
-                    setFromYear(format(now, "yyyy"))
-                    setToDay(format(now, "dd"))
-                    setToMonth(format(now, "MM"))
-                    setToYear(format(now, "yyyy"))
+                    setFromDay(formatDate(now, "dd"))
+                    setFromMonth(formatDate(now, "MM"))
+                    setFromYear(formatDate(now, "yyyy"))
+                    setToDay(formatDate(now, "dd"))
+                    setToMonth(formatDate(now, "MM"))
+                    setToYear(formatDate(now, "yyyy"))
                   }}
                 >
                   <X className="h-4 w-4" />

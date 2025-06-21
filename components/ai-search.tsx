@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/badge"
 import { useData } from "./providers/data-provider"
 import { searchWithNaturalLanguage } from "@/lib/ai-service"
 import { format } from "date-fns"
+import { ProductionEntry, DisposalEntry } from "@/lib/types"
+import { formatNumber, formatDate } from "@/lib/utils"
 
 export function AISearch() {
   const { productionEntries, disposalEntries } = useData()
@@ -91,16 +93,16 @@ export function AISearch() {
                         <CardContent className="py-4">
                           <div className="flex flex-col gap-2">
                             <div className="flex justify-between items-center">
-                              <span className="font-medium">{entry.productName}</span>
+                              <span className="font-medium">{entry.product_name}</span>
                               <Badge variant="outline" className="capitalize">
                                 {entry.shift} Shift
                               </Badge>
                             </div>
                             <div className="flex justify-between text-sm">
                               <span>Quantity: {entry.quantity} units</span>
-                              <span>Date: {format(new Date(entry.date), "MMM dd, yyyy")}</span>
+                              <span>Date: {formatDate(entry.date, "medium")}</span>
                             </div>
-                            <div className="text-sm text-muted-foreground">Staff: {entry.staffName}</div>
+                            <div className="text-sm text-muted-foreground">Staff: {entry.staff_name}</div>
                           </div>
                         </CardContent>
                       </Card>
@@ -121,7 +123,7 @@ export function AISearch() {
                         <CardContent className="py-4">
                           <div className="flex flex-col gap-2">
                             <div className="flex justify-between items-center">
-                              <span className="font-medium">{entry.productName}</span>
+                              <span className="font-medium">{entry.product_name}</span>
                               <div className="flex gap-2">
                                 <Badge variant="outline" className="capitalize">
                                   {entry.shift} Shift
@@ -131,9 +133,9 @@ export function AISearch() {
                             </div>
                             <div className="flex justify-between text-sm">
                               <span>Quantity: {entry.quantity} units</span>
-                              <span>Date: {format(new Date(entry.date), "MMM dd, yyyy")}</span>
+                              <span>Date: {formatDate(entry.date, "medium")}</span>
                             </div>
-                            <div className="text-sm text-muted-foreground">Staff: {entry.staffName}</div>
+                            <div className="text-sm text-muted-foreground">Staff: {entry.staff_name}</div>
                             {entry.notes && <div className="text-sm italic">Notes: {entry.notes}</div>}
                           </div>
                         </CardContent>

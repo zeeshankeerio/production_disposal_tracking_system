@@ -40,13 +40,13 @@ export function Header() {
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full transition-all duration-300",
+        "sticky top-0 z-50 w-full transition-all duration-300 overflow-hidden",
         isScrolled ? "bg-background/80 backdrop-blur-md border-b shadow-sm" : "bg-background",
       )}
     >
-      <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="flex items-center space-x-2">
+      <div className="container flex h-16 items-center justify-between overflow-hidden px-4">
+        <div className="flex items-center gap-4 overflow-hidden min-w-0">
+          <Link href="/" className="flex items-center space-x-2 flex-shrink-0">
             <div className="relative w-8 h-8 overflow-hidden rounded-full bg-primary flex items-center justify-center">
               <BarChart2 className="h-5 w-5 text-primary-foreground" />
             </div>
@@ -54,13 +54,13 @@ export function Header() {
           </Link>
           
           {/* Digital Clock */}
-          <div className="hidden lg:block">
-            <DigitalClock showDate={true} showSeconds={true} />
+          <div className="hidden lg:block overflow-hidden flex-shrink-0">
+            <DigitalClock />
           </div>
         </div>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="hidden md:flex items-center gap-6 overflow-hidden flex-shrink-0">
           <Link href="/" className="text-sm font-medium transition-colors hover:text-primary">
             Dashboard
           </Link>
@@ -84,10 +84,10 @@ export function Header() {
           </Link>
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 overflow-hidden flex-shrink-0">
           {/* Compact Digital Clock for smaller screens */}
-          <div className="hidden md:block lg:hidden">
-            <DigitalClock showDate={false} showSeconds={false} />
+          <div className="hidden md:block lg:hidden overflow-hidden">
+            <DigitalClock />
           </div>
           
           <Button variant="ghost" size="icon" aria-label="Toggle Theme" className="mr-2" onClick={toggleTheme}>

@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, AreaChart, Area } from "recharts"
 import { formatDate } from "@/lib/utils"
-import { Download, Calendar, Filter, ArrowUpDown, RefreshCw, Layers } from "lucide-react"
+import { Download, Calendar, Filter, ArrowUpDown, RefreshCw, Layers, Search } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { DateRange } from "react-day-picker"
@@ -21,7 +21,7 @@ import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useToast } from "@/components/ui/use-toast"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, FileDown, FileText } from "lucide-react"
+import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, FileDown, FileText, LayoutDashboard } from "lucide-react"
 import { CopyrightFooter } from "@/components/copyright-footer"
 import { QuickNav } from "@/components/quick-nav"
 import { DigitalClock } from "@/components/digital-clock"
@@ -183,25 +183,25 @@ export default function DashboardPage() {
       if (!dateRange?.from) return matchesProduct && matchesCategory;
 
       try {
-        // Convert entry date to Eastern timezone
-        const entryDate = toEastern(new Date(entry.date));
+      // Convert entry date to Eastern timezone
+      const entryDate = toEastern(new Date(entry.date));
         if (isNaN(entryDate.getTime())) {
           console.warn("Invalid production entry date:", entry.date, entry.id);
           return false;
         }
 
-        // Convert range dates to Eastern timezone
-        const startDate = toEastern(new Date(dateRange.from));
-        startDate.setHours(0, 0, 0, 0);
+      // Convert range dates to Eastern timezone
+      const startDate = toEastern(new Date(dateRange.from));
+      startDate.setHours(0, 0, 0, 0);
 
-        const endDate = dateRange.to ? toEastern(new Date(dateRange.to)) : startDate;
-        endDate.setHours(23, 59, 59, 999);
+      const endDate = dateRange.to ? toEastern(new Date(dateRange.to)) : startDate;
+      endDate.setHours(23, 59, 59, 999);
 
-        // Check if entry date falls within the range
-        const isInDateRange = isWithinInterval(entryDate, {
-          start: startDate,
-          end: endDate
-        });
+      // Check if entry date falls within the range
+      const isInDateRange = isWithinInterval(entryDate, {
+        start: startDate,
+        end: endDate
+      });
 
         // Debug logging for today filter
         if (activeView === "today") {
@@ -215,7 +215,7 @@ export default function DashboardPage() {
           });
         }
 
-        return matchesProduct && matchesCategory && isInDateRange;
+      return matchesProduct && matchesCategory && isInDateRange;
       } catch (error) {
         console.error("Error filtering production entry:", error, entry);
         return false;
@@ -233,25 +233,25 @@ export default function DashboardPage() {
       if (!dateRange?.from) return matchesProduct && matchesReason;
 
       try {
-        // Convert entry date to Eastern timezone
-        const entryDate = toEastern(new Date(entry.date));
+      // Convert entry date to Eastern timezone
+      const entryDate = toEastern(new Date(entry.date));
         if (isNaN(entryDate.getTime())) {
           console.warn("Invalid disposal entry date:", entry.date, entry.id);
           return false;
         }
 
-        // Convert range dates to Eastern timezone
-        const startDate = toEastern(new Date(dateRange.from));
-        startDate.setHours(0, 0, 0, 0);
+      // Convert range dates to Eastern timezone
+      const startDate = toEastern(new Date(dateRange.from));
+      startDate.setHours(0, 0, 0, 0);
 
-        const endDate = dateRange.to ? toEastern(new Date(dateRange.to)) : startDate;
-        endDate.setHours(23, 59, 59, 999);
+      const endDate = dateRange.to ? toEastern(new Date(dateRange.to)) : startDate;
+      endDate.setHours(23, 59, 59, 999);
 
-        // Check if entry date falls within the range
-        const isInDateRange = isWithinInterval(entryDate, {
-          start: startDate,
-          end: endDate
-        });
+      // Check if entry date falls within the range
+      const isInDateRange = isWithinInterval(entryDate, {
+        start: startDate,
+        end: endDate
+      });
 
         // Debug logging for today filter
         if (activeView === "today") {
@@ -266,7 +266,7 @@ export default function DashboardPage() {
           });
         }
 
-        return matchesProduct && matchesReason && isInDateRange;
+      return matchesProduct && matchesReason && isInDateRange;
       } catch (error) {
         console.error("Error filtering disposal entry:", error, entry);
         return false;
@@ -364,8 +364,8 @@ export default function DashboardPage() {
     
     // Add date range information
     csvRows.push("Date Range")
-    csvRows.push(`From: ${format(dateRange?.from || new Date(), "yyyy-MM-dd")}`)
-    csvRows.push(`To: ${format(dateRange?.to || new Date(), "yyyy-MM-dd")}`)
+    csvRows.push(`From: ${formatDate(dateRange?.from || new Date(), "short")}`)
+    csvRows.push(`To: ${formatDate(dateRange?.to || new Date(), "short")}`)
     csvRows.push("") // Empty row for spacing
 
     // Add production summary
@@ -419,7 +419,7 @@ export default function DashboardPage() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.setAttribute('href', url)
-    link.setAttribute('download', `${filename}-${format(new Date(), "yyyy-MM-dd")}.csv`)
+    link.setAttribute('download', `${filename}-${formatDate(new Date(), "short")}.csv`)
     link.style.visibility = 'hidden'
     document.body.appendChild(link)
     link.click()
@@ -604,7 +604,7 @@ export default function DashboardPage() {
         .sort((a, b) => a.date.localeCompare(b.date))
         .map(item => ({
           ...item,
-          formattedDate: format(new Date(item.date), 'MMM dd'),
+          formattedDate: formatDate(item.date, "MMM dd"),
           disposalRate: calculatePercentage(item.disposal, item.production),
           efficiency: calculateEfficiency(item.production, item.disposal)
         }));
@@ -648,381 +648,406 @@ export default function DashboardPage() {
   
   return (
     <div className="w-full px-4 py-10 space-y-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
-          <p className="text-muted-foreground">
-            Analytics and performance metrics
-          </p>
-        </div>
-        <div className="shrink-0">
-          <DigitalClock />
+      {/* Enhanced Header Section */}
+      <div className="bg-gradient-to-r from-background via-background/95 to-background/90 border border-border/50 rounded-xl p-6 shadow-sm backdrop-blur-sm">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          {/* Title Section */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                <LayoutDashboard className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
+                  Analytics Dashboard
+                </h1>
+                <p className="text-muted-foreground text-sm font-medium">
+                  Comprehensive analysis of production and disposal data
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Action Buttons Section */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="transition-all hover:shadow-md hover:bg-accent/50 border-border/50"
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => exportToCSV(chartData, 'dashboard-summary', 'production')}
+                className="transition-all hover:shadow-md hover:bg-accent/50 border-border/50"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Export Summary
+              </Button>
+            </div>
+            <div className="h-8 w-px bg-border/50" />
+            <DigitalClock />
+          </div>
         </div>
       </div>
       
       <QuickNav />
       
-      {/* Add this before the date range picker section */}
-      <div className="flex flex-wrap gap-2 mb-4">
-        <Button
-          variant={activeView === "today" ? "default" : "outline"}
-          size="sm"
-          onClick={() => {
-            setDateRange(getDateRangeForPeriod("today"));
-            setActiveView("today");
-          }}
-        >
-          Today
-        </Button>
-        <Button
-          variant={activeView === "week" ? "default" : "outline"}
-          size="sm"
-          onClick={() => {
-            setDateRange(getDateRangeForPeriod("week"));
-            setActiveView("week");
-          }}
-        >
-          This Week
-        </Button>
-        <Button
-          variant={activeView === "month" ? "default" : "outline"}
-          size="sm"
-          onClick={() => {
-            setDateRange(getDateRangeForPeriod("month"));
-            setActiveView("month");
-          }}
-        >
-          This Month
-        </Button>
-        <Button
-          variant={activeView === "three_months" ? "default" : "outline"}
-          size="sm"
-          onClick={() => {
-            setDateRange(getDateRangeForPeriod("three_months"));
-            setActiveView("three_months");
-          }}
-        >
-          Last 3 Months
-        </Button>
-        <Button
-          variant={activeView === "quarter" ? "default" : "outline"}
-          size="sm"
-          onClick={() => {
-            setDateRange(getDateRangeForPeriod("quarter"));
-            setActiveView("quarter");
-          }}
-        >
-          This Quarter
-        </Button>
-        <Button
-          variant={activeView === "year" ? "default" : "outline"}
-          size="sm"
-          onClick={() => {
-            setDateRange(getDateRangeForPeriod("year"));
-            setActiveView("year");
-          }}
-        >
-          This Year
-        </Button>
-      </div>
-      
-      {/* Simplified Date Filter */}
-      <div className="flex flex-wrap gap-4 items-center">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">From:</span>
-            <Select
-              value={tempDateRange?.from ? tempDateRange.from.getFullYear().toString() : "2010"}
-              onValueChange={(year) => handleFromDateChange('year', year)}
-            >
-              <SelectTrigger className="w-[100px]">
-                <SelectValue placeholder="Year" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: new Date().getFullYear() - 2010 + 1 }, (_, i) => new Date().getFullYear() - i).map((year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={tempDateRange?.from ? tempDateRange.from.getMonth().toString() : new Date().getMonth().toString()}
-              onValueChange={(month) => handleFromDateChange('month', month)}
-            >
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Month" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: 12 }, (_, i) => ({
-                  value: i.toString(),
-                  label: new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
-                })).map(({ value, label }) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select
-              value={tempDateRange?.from ? tempDateRange.from.getDate().toString() : new Date().getDate().toString()}
-              onValueChange={(day) => handleFromDateChange('day', day)}
-            >
-              <SelectTrigger className="w-[80px]">
-                <SelectValue placeholder="Day" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from(
-                  { length: getDaysInMonth(
-                    tempDateRange?.from ? tempDateRange.from.getFullYear() : new Date().getFullYear(),
-                    tempDateRange?.from ? tempDateRange.from.getMonth() : new Date().getMonth()
-                  )},
-                  (_, i) => i + 1
-                ).map((day) => (
-                  <SelectItem key={day} value={day.toString()}>
-                    {day}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      {/* Consolidated Filters Section */}
+      <div className="bg-card/50 border border-border/30 rounded-lg p-4 shadow-sm backdrop-blur-sm">
+        <div className="space-y-4">
+          {/* Date Range Filters */}
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="text-sm font-medium text-muted-foreground">Date Range:</span>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={activeView === "today" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setDateRange(getDateRangeForPeriod("today"));
+                  setActiveView("today");
+                }}
+                className="transition-all hover:shadow-sm"
+              >
+                Today
+              </Button>
+              <Button
+                variant={activeView === "week" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setDateRange(getDateRangeForPeriod("week"));
+                  setActiveView("week");
+                }}
+                className="transition-all hover:shadow-sm"
+              >
+                This Week
+              </Button>
+              <Button
+                variant={activeView === "month" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setDateRange(getDateRangeForPeriod("month"));
+                  setActiveView("month");
+                }}
+                className="transition-all hover:shadow-sm"
+              >
+                This Month
+              </Button>
+              <Button
+                variant={activeView === "three_months" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setDateRange(getDateRangeForPeriod("three_months"));
+                  setActiveView("three_months");
+                }}
+                className="transition-all hover:shadow-sm"
+              >
+                Last 3 Months
+              </Button>
+              <Button
+                variant={activeView === "quarter" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setDateRange(getDateRangeForPeriod("quarter"));
+                  setActiveView("quarter");
+                }}
+                className="transition-all hover:shadow-sm"
+              >
+                This Quarter
+              </Button>
+              <Button
+                variant={activeView === "year" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setDateRange(getDateRangeForPeriod("year"));
+                  setActiveView("year");
+                }}
+                className="transition-all hover:shadow-sm"
+              >
+                This Year
+              </Button>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium">Till:</span>
-            <Select
-              value={tempDateRange?.to ? tempDateRange.to.getFullYear().toString() : new Date().getFullYear().toString()}
-              onValueChange={(year) => handleToDateChange('year', year)}
-            >
-              <SelectTrigger className="w-[100px]">
-                <SelectValue placeholder="Year" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          {/* Custom Date Range Filter */}
+          <div className="flex flex-wrap items-center gap-4 border-t pt-4">
+            <span className="text-sm font-medium text-muted-foreground">Custom Range:</span>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm">From:</span>
+                <Select
+                  value={tempDateRange?.from ? tempDateRange.from.getFullYear().toString() : "2010"}
+                  onValueChange={(year) => handleFromDateChange('year', year)}
+                >
+                  <SelectTrigger className="w-[100px] h-8">
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: new Date().getFullYear() - 2010 + 1 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            <Select
-              value={tempDateRange?.to ? tempDateRange.to.getMonth().toString() : new Date().getMonth().toString()}
-              onValueChange={(month) => handleToDateChange('month', month)}
-            >
-              <SelectTrigger className="w-[120px]">
-                <SelectValue placeholder="Month" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: 12 }, (_, i) => ({
-                  value: i.toString(),
-                  label: new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
-                })).map(({ value, label }) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                <Select
+                  value={tempDateRange?.from ? tempDateRange.from.getMonth().toString() : new Date().getMonth().toString()}
+                  onValueChange={(month) => handleFromDateChange('month', month)}
+                >
+                  <SelectTrigger className="w-[120px] h-8">
+                    <SelectValue placeholder="Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => ({
+                      value: i.toString(),
+                      label: new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
+                    })).map(({ value, label }) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            <Select
-              value={tempDateRange?.to ? tempDateRange.to.getDate().toString() : new Date().getDate().toString()}
-              onValueChange={(day) => handleToDateChange('day', day)}
-            >
-              <SelectTrigger className="w-[80px]">
-                <SelectValue placeholder="Day" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from(
-                  { length: getDaysInMonth(
-                    tempDateRange?.to ? tempDateRange.to.getFullYear() : new Date().getFullYear(),
-                    tempDateRange?.to ? tempDateRange.to.getMonth() : new Date().getMonth()
-                  )},
-                  (_, i) => i + 1
-                ).map((day) => (
-                  <SelectItem key={day} value={day.toString()}>
-                    {day}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+                <Select
+                  value={tempDateRange?.from ? tempDateRange.from.getDate().toString() : new Date().getDate().toString()}
+                  onValueChange={(day) => handleFromDateChange('day', day)}
+                >
+                  <SelectTrigger className="w-[80px] h-8">
+                    <SelectValue placeholder="Day" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from(
+                      { length: getDaysInMonth(
+                        tempDateRange?.from ? tempDateRange.from.getFullYear() : new Date().getFullYear(),
+                        tempDateRange?.from ? tempDateRange.from.getMonth() : new Date().getMonth()
+                      )},
+                      (_, i) => i + 1
+                    ).map((day) => (
+                      <SelectItem key={day} value={day.toString()}>
+                        {day}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClear}
-              className="h-8"
-            >
-              Clear
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handleSubmit}
-              className="h-8"
-            >
-              Apply Filter
-            </Button>
-          </div>
-        </div>
-      </div>
-      
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h2>
-          <p className="text-muted-foreground">Comprehensive analysis of production and disposal data</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="transition-all hover:shadow-md"
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => exportToCSV(chartData, 'dashboard-summary', 'production')}
-            className="transition-all hover:shadow-md"
-          >
-            <FileText className="mr-2 h-4 w-4" />
-            Export Dashboard Summary
-          </Button>
-        </div>
-      </div>
-      
-      {/* Filters Bar */}
-      <div className="flex flex-col md:flex-row gap-4 items-center justify-between border-b pb-4">
-        <div className="flex flex-wrap gap-2 items-center">
-          <div className="flex items-center gap-2">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8">
-                  <Filter className="mr-2 h-3 w-3" />
-                  Filters
-                  {(selectedProduct !== "all" || selectedReason !== "all" || selectedCategory !== "all") && (
-                    <Badge variant="secondary" className="ml-2 px-1.5 py-0">
-                      {(selectedProduct !== "all" ? 1 : 0) + 
-                       (selectedReason !== "all" ? 1 : 0) + 
-                       (selectedCategory !== "all" ? 1 : 0)}
-                    </Badge>
-                  )}
+              <div className="flex items-center gap-2">
+                <span className="text-sm">To:</span>
+                <Select
+                  value={tempDateRange?.to ? tempDateRange.to.getFullYear().toString() : new Date().getFullYear().toString()}
+                  onValueChange={(year) => handleToDateChange('year', year)}
+                >
+                  <SelectTrigger className="w-[100px] h-8">
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={tempDateRange?.to ? tempDateRange.to.getMonth().toString() : new Date().getMonth().toString()}
+                  onValueChange={(month) => handleToDateChange('month', month)}
+                >
+                  <SelectTrigger className="w-[120px] h-8">
+                    <SelectValue placeholder="Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => ({
+                      value: i.toString(),
+                      label: new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
+                    })).map(({ value, label }) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={tempDateRange?.to ? tempDateRange.to.getDate().toString() : new Date().getDate().toString()}
+                  onValueChange={(day) => handleToDateChange('day', day)}
+                >
+                  <SelectTrigger className="w-[80px] h-8">
+                    <SelectValue placeholder="Day" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from(
+                      { length: getDaysInMonth(
+                        tempDateRange?.to ? tempDateRange.to.getFullYear() : new Date().getFullYear(),
+                        tempDateRange?.to ? tempDateRange.to.getMonth() : new Date().getMonth()
+                      )},
+                      (_, i) => i + 1
+                    ).map((day) => (
+                      <SelectItem key={day} value={day.toString()}>
+                        {day}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClear}
+                  className="h-8 transition-all hover:shadow-sm"
+                >
+                  Clear
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent align="start" className="p-4 w-80">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Category</h4>
-                    <Select
-                      value={selectedCategory}
-                      onValueChange={setSelectedCategory}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        {categories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Product</h4>
-                    <Select
-                      value={selectedProduct}
-                      onValueChange={setSelectedProduct}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select product" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Products</SelectItem>
-                        {productStats.map((product) => (
-                          <SelectItem key={product.name} value={product.name}>
-                            {product.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Disposal Reason</h4>
-                    <Select
-                      value={selectedReason}
-                      onValueChange={setSelectedReason}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select reason" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Reasons</SelectItem>
-                        {allReasons.map((reason) => (
-                          <SelectItem key={reason} value={reason}>
-                            {reason}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="flex justify-between pt-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedProduct("all")
-                        setSelectedReason("all")
-                        setSelectedCategory("all")
-                      }}
-                    >
-                      Reset filters
-                    </Button>
-                    <Button size="sm">Apply</Button>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleSubmit}
+                  className="h-8 transition-all hover:shadow-sm"
+                >
+                  Apply Filter
+                </Button>
+              </div>
+            </div>
           </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Button
-            variant={chartType === "area" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setChartType("area")}
-            className="h-8 px-2.5"
-          >
-            <Layers className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={chartType === "bar" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setChartType("bar")}
-            className="h-8 px-2.5"
-          >
-            <BarChart3 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={chartType === "line" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setChartType("line")}
-            className="h-8 px-2.5"
-          >
-            <LineChartIcon className="h-4 w-4" />
-          </Button>
+
+          {/* Advanced Filters and Chart Controls */}
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-sm font-medium text-muted-foreground">Filters:</span>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8">
+                    <Search className="mr-2 h-3 w-3" />
+                    Advanced Filters
+                    {(selectedProduct !== "all" || selectedReason !== "all" || selectedCategory !== "all") && (
+                      <Badge variant="secondary" className="ml-2 px-1.5 py-0">
+                        {(selectedProduct !== "all" ? 1 : 0) + 
+                         (selectedReason !== "all" ? 1 : 0) + 
+                         (selectedCategory !== "all" ? 1 : 0)}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="p-4 w-80">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <h4 className="font-medium">Category</h4>
+                      <Select
+                        value={selectedCategory}
+                        onValueChange={setSelectedCategory}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Categories</SelectItem>
+                          {categories.map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h4 className="font-medium">Product</h4>
+                      <Select
+                        value={selectedProduct}
+                        onValueChange={setSelectedProduct}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select product" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Products</SelectItem>
+                          {productStats.map((product) => (
+                            <SelectItem key={product.name} value={product.name}>
+                              {product.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h4 className="font-medium">Disposal Reason</h4>
+                      <Select
+                        value={selectedReason}
+                        onValueChange={setSelectedReason}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select reason" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Reasons</SelectItem>
+                          {allReasons.map((reason) => (
+                            <SelectItem key={reason} value={reason}>
+                              {reason}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="flex justify-between pt-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedProduct("all")
+                          setSelectedReason("all")
+                          setSelectedCategory("all")
+                        }}
+                      >
+                        Reset filters
+                      </Button>
+                      <Button size="sm">Apply</Button>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            {/* Chart Type Controls */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-muted-foreground">Chart Type:</span>
+              <Button
+                variant={chartType === "area" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setChartType("area")}
+                className="h-8 px-2.5 transition-all hover:shadow-sm"
+              >
+                <Layers className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={chartType === "bar" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setChartType("bar")}
+                className="h-8 px-2.5 transition-all hover:shadow-sm"
+              >
+                <BarChart3 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={chartType === "line" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setChartType("line")}
+                className="h-8 px-2.5 transition-all hover:shadow-sm"
+              >
+                <LineChartIcon className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
       
@@ -1465,7 +1490,7 @@ export default function DashboardPage() {
                               {entry.product_name}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {format(new Date(entry.date), "MMM dd, yyyy HH:mm")}
+                              {formatDate(entry.date, "MMM dd, yyyy HH:mm")}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">

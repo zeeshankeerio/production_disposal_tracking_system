@@ -22,6 +22,7 @@ import {
   Cell,
   Legend,
 } from "recharts"
+import { ProductionEntry, DisposalEntry } from "@/lib/types"
 
 // Colors for charts
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#FF6B6B", "#6B66FF"]
@@ -128,7 +129,7 @@ export function NLSearch() {
         productionEntries
           .filter((entry) => new Date(entry.date) >= lastWeekStart)
           .forEach((entry) => {
-            const dateKey = format(new Date(entry.date), "yyyy-MM-dd")
+            const dateKey = formatDate(entry.date, "short")
             dailyProduction[dateKey] = (dailyProduction[dateKey] || 0) + entry.quantity
           })
 
@@ -187,7 +188,7 @@ export function NLSearch() {
       if (lowerQuery.includes("by day") || lowerQuery.includes("per day") || lowerQuery.includes("daily")) {
         const byDay = productionEntries.reduce(
           (acc, entry) => {
-            const dateKey = format(new Date(entry.date), "yyyy-MM-dd")
+            const dateKey = formatDate(entry.date, "short")
             acc[dateKey] = (acc[dateKey] || 0) + entry.quantity
             return acc
           },
@@ -243,7 +244,7 @@ export function NLSearch() {
           // Get production trend by day
           const byDay = productEntries.reduce(
             (acc, entry) => {
-              const dateKey = format(new Date(entry.date), "yyyy-MM-dd")
+              const dateKey = formatDate(entry.date, "short")
               acc[dateKey] = (acc[dateKey] || 0) + entry.quantity
               return acc
             },

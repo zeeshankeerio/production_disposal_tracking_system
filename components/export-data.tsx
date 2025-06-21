@@ -13,6 +13,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { formatDate } from "@/lib/utils"
+import { ProductionEntry, DisposalEntry } from "@/lib/types"
 
 interface FieldSelection {
   date: boolean;
@@ -108,8 +110,8 @@ export function ExportData() {
             if (field === 'date' || field === 'expiration_date') {
               const dateValue = entry[field as keyof typeof entry]
               mappedEntry[field] = dateValue 
-                ? format(new Date(dateValue as string | Date), "yyyy-MM-dd")
-                : ""
+                ? formatDate(dateValue as string | Date, "short")
+                : "N/A"
             } else {
               mappedEntry[field] = entry[field as keyof typeof entry]
             }
@@ -142,11 +144,11 @@ export function ExportData() {
 
           content = headers + "\n" + rows
         }
-        filename = `${dataType}_data_${format(new Date(), "yyyy-MM-dd")}.csv`
+        filename = `${dataType}_data_${formatDate(new Date(), "short")}.csv`
       } else if (exportType === "json") {
         // JSON export
         content = JSON.stringify(mappedEntries, null, 2)
-        filename = `${dataType}_data_${format(new Date(), "yyyy-MM-dd")}.json`
+        filename = `${dataType}_data_${formatDate(new Date(), "short")}.json`
       }
 
       setProgress(80)
@@ -206,7 +208,7 @@ export function ExportData() {
       // Create and download a sample report
       const reportContent = `
 # Production and Disposal Report
-Generated on: ${format(new Date(), "MMMM dd, yyyy")}
+Generated on: ${formatDate(new Date(), "long")}
 
 ## Summary
 - Total Production: ${productionEntries.reduce((sum, entry) => sum + entry.quantity, 0)} units
@@ -255,7 +257,7 @@ ${Object.entries(
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
-      a.download = `production_disposal_report_${format(new Date(), "yyyy-MM-dd")}.txt`
+      a.download = `production_disposal_report_${formatDate(new Date(), "short")}.txt`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)

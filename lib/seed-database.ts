@@ -1,6 +1,7 @@
 import * as db from "./json-db"
 import { Product, ProductionEntry, DisposalEntry } from "./types"
 import { v4 as uuidv4 } from "uuid"
+import { calculateExpirationDate } from "./data-service"
 
 // Initial sample products
 const sampleProducts: Omit<Product, "id">[] = [
@@ -57,7 +58,8 @@ export const seedProductionEntries = async (products: Product[]): Promise<void> 
         product_name: product.name,
         quantity: Math.floor(Math.random() * 100) + 10,
         shift: shifts[i % shifts.length],
-        notes: "Sample production entry"
+        notes: `Generated entry for ${product.name}`,
+        expiration_date: calculateExpirationDate(formatDate(randomDate), product.category as any),
       }
       
       db.createProductionEntry(entry)

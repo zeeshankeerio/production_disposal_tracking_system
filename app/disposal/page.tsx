@@ -12,7 +12,7 @@ import { DateRange } from "react-day-picker"
 import { format, subDays, isValid, isSameDay, isWithinInterval } from "date-fns"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Search, Filter, RefreshCw, FileText } from "lucide-react"
+import { Search, Filter, RefreshCw, FileText, PackageMinus } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import { DisposalEntry } from "@/lib/types"
@@ -21,7 +21,7 @@ import { CopyrightFooter } from "@/components/copyright-footer"
 import { QuickNav } from "@/components/quick-nav"
 import { EntriesListView } from "@/components/entries-list-view"
 import { DigitalClock } from "@/components/digital-clock"
-import { toEastern } from '@/lib/date-utils'
+import { toEastern, formatDate } from '@/lib/date-utils'
 
 // Custom tooltip component
 const CustomTooltip = ({ active, payload, label }: any) => {
@@ -329,7 +329,7 @@ export default function DisposalPage() {
       csvRows.push(`Reason Filter: ${selectedReason}`)
     }
     if (dateRange?.from) {
-      csvRows.push(`Date Range: ${format(dateRange.from, "yyyy-MM-dd")} to ${dateRange.to ? format(dateRange.to, "yyyy-MM-dd") : format(dateRange.from, "yyyy-MM-dd")}`)
+      csvRows.push(`Date Range: ${formatDate(dateRange.from, "short")} to ${dateRange.to ? formatDate(dateRange.to, "short") : formatDate(dateRange.from, "short")}`)
     }
     csvRows.push(`Sort Order: ${sortOrder === "desc" ? "Newest First" : "Oldest First"}`)
     csvRows.push("") // Empty row for spacing
@@ -365,7 +365,7 @@ export default function DisposalPage() {
         entry.product_name,
         category,
         entry.quantity,
-        format(new Date(entry.date), "yyyy-MM-dd"),
+        formatDate(entry.date, "short"),
         entry.reason,
         entry.staff_name,
         formatShift(entry.shift),
@@ -393,9 +393,9 @@ export default function DisposalPage() {
       filename += `-${selectedReason.toLowerCase().replace(/\s+/g, '-')}`
     }
     if (dateRange?.from) {
-      filename += `-${format(dateRange.from, "yyyy-MM-dd")}`
+      filename += `-${formatDate(dateRange.from, "short")}`
       if (dateRange.to && !isSameDay(dateRange.from, dateRange.to)) {
-        filename += `-to-${format(dateRange.to, "yyyy-MM-dd")}`
+        filename += `-to-${formatDate(dateRange.to, "short")}`
       }
     }
     filename += `.csv`
@@ -515,15 +515,53 @@ export default function DisposalPage() {
   
   return (
     <div className="w-full px-4 py-10 space-y-8">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-3xl font-bold tracking-tight">Disposal Management</h2>
-          <p className="text-muted-foreground">
-            Track and manage your disposal data
-          </p>
-        </div>
-        <div className="shrink-0">
-          <DigitalClock />
+      {/* Enhanced Header Section */}
+      <div className="bg-gradient-to-r from-background via-background/95 to-background/90 border border-border/50 rounded-xl p-6 shadow-sm backdrop-blur-sm">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+          {/* Title Section */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 bg-destructive/10 rounded-lg flex items-center justify-center">
+                <PackageMinus className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
+                  Disposal Management
+                </h1>
+                <p className="text-muted-foreground text-sm font-medium">
+                  Track and manage your disposal data with precision
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Action Buttons Section */}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="transition-all hover:shadow-md hover:bg-accent/50 border-border/50"
+              >
+                <RefreshCw className={`mr-2 h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                Refresh
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={exportToCSV}
+                disabled={sortedEntries.length === 0}
+                className="transition-all hover:shadow-md hover:bg-accent/50 border-border/50"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Export CSV
+              </Button>
+            </div>
+            <div className="h-8 w-px bg-border/50" />
+            <DigitalClock />
+          </div>
         </div>
       </div>
       

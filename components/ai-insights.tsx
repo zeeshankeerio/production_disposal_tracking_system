@@ -460,13 +460,13 @@ export function AIInsights({ dateFrom, dateTo, selectedProduct }: AIInsightsProp
       const dailyRates = new Map<string, number>()
       
       filteredEntries.production.forEach(entry => {
-        const date = format(new Date(entry.date), "yyyy-MM-dd")
+        const date = formatDate(entry.date, "short")
         const current = dailyRates.get(date) || 0
         dailyRates.set(date, current + entry.quantity)
       })
       
       filteredEntries.disposal.forEach(entry => {
-        const date = format(new Date(entry.date), "yyyy-MM-dd")
+        const date = formatDate(entry.date, "short")
         const current = dailyRates.get(date) || 0
         dailyRates.set(date, current - entry.quantity)
       })
@@ -516,7 +516,7 @@ export function AIInsights({ dateFrom, dateTo, selectedProduct }: AIInsightsProp
     // Create data points for each day
     for (let i = 0; i < days; i++) {
       const date = addDays(dateFrom, i)
-      const dateStr = format(date, "yyyy-MM-dd")
+      const dateStr = formatDate(date, "short")
       
       // Find production and disposal for this day
       const dayProduction = filteredEntries.production
@@ -531,7 +531,7 @@ export function AIInsights({ dateFrom, dateTo, selectedProduct }: AIInsightsProp
       
       data.push({
         date: dateStr,
-        formattedDate: format(date, "MMM dd"),
+        formattedDate: formatDate(date, "MMM dd"),
         rate: parseFloat(rate.toFixed(1)),
         production: dayProduction,
         disposal: dayDisposal
@@ -647,7 +647,7 @@ export function AIInsights({ dateFrom, dateTo, selectedProduct }: AIInsightsProp
           <CardTitle>AI Insights</CardTitle>
           <CardDescription>
             {lastUpdated 
-              ? `Last updated ${format(lastUpdated, "MMM d, h:mm a")}`
+              ? `Last updated ${formatDate(lastUpdated, "MMM d, h:mm a")}`
               : "Analyzing your production data..."}
           </CardDescription>
                       </div>

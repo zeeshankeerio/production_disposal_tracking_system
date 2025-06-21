@@ -6,18 +6,22 @@ import type { ProductionEntry, DisposalEntry } from "./types"
 export async function generateInsights(productionEntries: ProductionEntry[], disposalEntries: DisposalEntry[]) {
   // Prepare data for the AI
   const productionData = productionEntries.map((entry) => ({
-    date: entry.date,
-    product: entry.productName,
+    product: entry.product_name,
     quantity: entry.quantity,
+    date: entry.date,
     shift: entry.shift,
+    staff: entry.staff_name,
+    notes: entry.notes || ""
   }))
 
   const disposalData = disposalEntries.map((entry) => ({
-    date: entry.date,
-    product: entry.productName,
+    product: entry.product_name,
     quantity: entry.quantity,
-    reason: entry.reason,
+    date: entry.date,
     shift: entry.shift,
+    staff: entry.staff_name,
+    reason: entry.reason,
+    notes: entry.notes || ""
   }))
 
   // Calculate some basic metrics
@@ -155,10 +159,10 @@ export async function forecastProduction(productionEntries: ProductionEntry[], d
     // Group production by product
     const productsByName = productionEntries.reduce(
       (acc, entry) => {
-        if (!acc[entry.productName]) {
-          acc[entry.productName] = []
+        if (!acc[entry.product_name]) {
+          acc[entry.product_name] = []
         }
-        acc[entry.productName].push(entry)
+        acc[entry.product_name].push(entry)
         return acc
       },
       {} as Record<string, ProductionEntry[]>,
@@ -221,7 +225,7 @@ export async function searchWithNaturalLanguage(
     // Search in production entries
     const matchingProduction = productionEntries
       .map((entry, index) => {
-        const searchText = `${entry.productName} ${entry.staffName} ${entry.date} ${entry.shift}`.toLowerCase()
+        const searchText = `${entry.product_name} ${entry.staff_name} ${entry.date} ${entry.shift}`.toLowerCase()
         const matchScore = keywords.filter((keyword) => searchText.includes(keyword)).length
         return { index, matchScore }
       })
@@ -234,7 +238,7 @@ export async function searchWithNaturalLanguage(
     const matchingDisposal = disposalEntries
       .map((entry, index) => {
         const searchText =
-          `${entry.productName} ${entry.staffName} ${entry.date} ${entry.shift} ${entry.reason} ${entry.notes || ""}`.toLowerCase()
+          `${entry.product_name} ${entry.staff_name} ${entry.date} ${entry.shift} ${entry.reason} ${entry.notes || ""}`.toLowerCase()
         const matchScore = keywords.filter((keyword) => searchText.includes(keyword)).length
         return { index, matchScore }
       })

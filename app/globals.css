@@ -78,6 +78,58 @@
   background: hsl(var(--muted-foreground) / 0.5);
 }
 
+/* Hide scrollbars from header */
+header,
+header *,
+header::-webkit-scrollbar,
+header *::-webkit-scrollbar {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+
+header::-webkit-scrollbar,
+header *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* Ensure header content doesn't overflow */
+header {
+  overflow: hidden !important;
+}
+
+header * {
+  overflow: hidden !important;
+}
+
+/* QuickNav component styling */
+.quick-nav-container {
+  overflow: visible !important;
+}
+
+.quick-nav-container * {
+  overflow: visible !important;
+}
+
+/* Ensure buttons don't overflow */
+button, .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Responsive container handling */
+.container {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+/* Flex container improvements */
+.flex-container {
+  min-width: 0;
+  overflow: hidden;
+}
+
 /* Animations */
 .animate-in {
   animation: fadeIn 0.5s ease-in-out;
