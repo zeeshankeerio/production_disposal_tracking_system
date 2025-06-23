@@ -286,3 +286,15 @@ export function prepareDateForSubmission(date: Date | string | undefined): strin
 
 // Export formatDate as formatEastern for backward compatibility
 export const formatEastern = formatDate;
+
+/**
+ * Adds a number of hours to a date or date string
+ * @param date The date or date string
+ * @param hours Number of hours to add
+ * @returns New Date object with hours added
+ */
+export function addHours(date: Date | string, hours: number): Date {
+  const d = typeof date === 'string' ? new Date(date) : new Date(date);
+  d.setHours(d.getHours() + hours);
+  return d;
+}
