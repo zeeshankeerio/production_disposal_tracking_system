@@ -157,7 +157,7 @@ export function EntryDetailView({ entry, type }: EntryDetailViewProps) {
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span>{formatDate(toEastern(new Date(entry.date)), "medium")}</span>
+            <span>{formatDate(entry.date, "medium")}</span>
           </div>
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -196,8 +196,8 @@ export function EntryDetailView({ entry, type }: EntryDetailViewProps) {
                     <Calendar className="h-4 w-4" />
                     <span>
                       {entry.created_at 
-                        ? formatDate(toEastern(new Date(entry.created_at)), "PPP p")
-                        : formatDate(toEastern(new Date(entry.date)), "PPP p")}
+                        ? formatDate(entry.created_at, "PPP p")
+                        : formatDate(entry.date, "PPP p")}
                     </span>
                   </div>
                 </div>
