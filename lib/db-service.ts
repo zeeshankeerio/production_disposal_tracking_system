@@ -3,7 +3,7 @@
 import { createServerSupabaseClient } from "./supabase"
 import type { Product, ProductionEntry, DisposalEntry } from "./types"
 import { mapProductFromDB, mapProductionEntryFromDB, mapDisposalEntryFromDB } from "./utils"
-import { prepareDateForSubmission, formatDateForDatabase, createEasternTimestamp } from "./date-utils"
+import { getCurrentEasternTime, prepareDateForSubmission, formatDateForDatabase, createEasternTimestamp, formatDateForTextDatabase } from "./date-utils"
 
 // Utility function to check if a table exists
 async function checkTableExists(tableName: string): Promise<boolean> {
@@ -107,8 +107,8 @@ export async function addProductionEntry(entry: Omit<ProductionEntry, "id" | "cr
     // Use the improved date utilities for consistent US Eastern timezone handling
     // Works with existing TEXT date fields in database
     const easternTimestamp = createEasternTimestamp();
-    const formattedDate = formatDateForDatabase(entry.date);
-    const formattedExpirationDate = formatDateForDatabase(entry.expiration_date);
+    const formattedDate = formatDateForTextDatabase(entry.date);
+    const formattedExpirationDate = formatDateForTextDatabase(entry.expiration_date);
     
     const { data, error } = await supabase
       .from("production_entries")
@@ -156,14 +156,16 @@ export async function addDisposalEntry(entry: Omit<DisposalEntry, "id" | "create
   const supabase = createServerSupabaseClient()
 
   try {
-    // Use the same timestamp for both date and created_at
+    // Use the improved date utilities for consistent US Eastern timezone handling
+    // Works with existing TEXT date fields in database
     const easternTimestamp = createEasternTimestamp();
+    const formattedDate = formatDateForTextDatabase(entry.date);
     
     const { data, error } = await supabase
       .from("disposal_entries")
       .insert({
         staff_name: entry.staff_name,
-        date: easternTimestamp, // Set to same timestamp as created_at
+        date: formattedDate,
         product_id: entry.product_id,
         product_name: entry.product_name,
         quantity: entry.quantity,

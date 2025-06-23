@@ -187,6 +187,7 @@ export function mapDisposalEntryFromDB(entry: any): DisposalEntry {
   if (!entry) {
     throw new Error('Invalid disposal entry data');
   }
+  
   return {
     id: entry.id || '',
     staff_name: entry.staff_name || '',

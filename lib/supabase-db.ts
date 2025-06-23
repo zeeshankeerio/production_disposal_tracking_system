@@ -5,7 +5,7 @@ import {
 } from "@/lib/types"
 import { createServerSupabaseClient } from "./supabase"
 import { handleSupabaseError } from "./supabase"
-import { fromEastern, formatDateForDatabase, createEasternTimestamp, parseDateFromDatabase } from '@/lib/date-utils';
+import { fromEastern, formatDateForTextDatabase, createEasternTimestamp, parseDateFromDatabase } from '@/lib/date-utils';
 
 // Products API
 export const getProducts = async (): Promise<Product[]> => {
@@ -149,7 +149,7 @@ const formatDateValue = (value: any): string => {
   try {
     // Use the improved date utilities for consistent timezone handling
     // Works with existing TEXT date fields in database
-    return formatDateForDatabase(value);
+    return formatDateForTextDatabase(value);
   } catch (error) {
     console.error('Error formatting date:', error);
     throw new Error('Invalid date format');
@@ -269,14 +269,15 @@ export const createDisposalEntry = async (entry: Omit<DisposalEntry, "id">): Pro
   try {
     const supabase = createServerSupabaseClient()
     
-    // Use the same timestamp for both date and created_at
+    // Use the improved date utilities for consistent US Eastern timezone handling
+    // Works with existing TEXT date fields in database
     const easternTimestamp = createEasternTimestamp();
     
     const { data, error } = await supabase
       .from('disposal_entries')
       .insert({
         staff_name: entry.staff_name,
-        date: easternTimestamp, // Set to same timestamp as created_at
+        date: formatDateValue(entry.date),
         product_id: entry.product_id,
         product_name: entry.product_name,
         quantity: entry.quantity,

@@ -210,14 +210,11 @@ export const getDisposalEntries = (): DisposalEntry[] => {
 export const createDisposalEntry = (entry: Omit<DisposalEntry, "id">): DisposalEntry | null => {
   const entries = getDisposalEntries()
   
-  // Use the same timestamp for both date and created_at
-  const currentTime = new Date()
-  
+  // Ensure the date is a Date object in EST
   const newEntry: DisposalEntry = {
     ...entry,
     id: uuidv4(),
-    date: currentTime, // Set to same timestamp as created_at
-    created_at: currentTime
+    date: entry.date instanceof Date ? entry.date : new Date(String(entry.date))
   }
   
   // Make sure date serializes correctly

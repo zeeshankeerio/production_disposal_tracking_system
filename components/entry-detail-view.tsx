@@ -21,7 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { toEastern, addHours } from "@/lib/date-utils"
+import { toEastern } from "@/lib/date-utils"
 
 interface EntryDetailViewProps {
   entry: ProductionEntry | DisposalEntry
@@ -157,7 +157,7 @@ export function EntryDetailView({ entry, type }: EntryDetailViewProps) {
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="flex items-center gap-2">
             <Calendar className="h-4 w-4 text-muted-foreground" />
-            <span>{isDisposalEntry(entry) ? formatDate(addHours(entry.date, 4), "medium") : formatDate(entry.date, "medium")}</span>
+            <span>{formatDate(entry.date, "medium")}</span>
           </div>
           <div className="flex items-center gap-2">
             <Clock className="h-4 w-4 text-muted-foreground" />
@@ -197,9 +197,7 @@ export function EntryDetailView({ entry, type }: EntryDetailViewProps) {
                     <span>
                       {entry.created_at 
                         ? formatDate(entry.created_at, "PPP p")
-                        : isDisposalEntry(entry) 
-                          ? formatDate(addHours(entry.date, 4), "PPP p")
-                          : formatDate(entry.date, "PPP p")}
+                        : formatDate(entry.date, "PPP p")}
                     </span>
                   </div>
                 </div>

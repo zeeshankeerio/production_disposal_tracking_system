@@ -657,7 +657,7 @@ export default function DashboardPage() {
               <div className="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center">
                 <LayoutDashboard className="h-5 w-5 text-primary" />
               </div>
-        <div>
+              <div>
                 <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-foreground to-foreground/80 bg-clip-text">
                   Analytics Dashboard
                 </h1>
@@ -706,346 +706,346 @@ export default function DashboardPage() {
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-sm font-medium text-muted-foreground">Date Range:</span>
             <div className="flex flex-wrap gap-2">
-        <Button
-          variant={activeView === "today" ? "default" : "outline"}
-          size="sm"
-          onClick={() => {
-            setDateRange(getDateRangeForPeriod("today"));
-            setActiveView("today");
-          }}
+              <Button
+                variant={activeView === "today" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setDateRange(getDateRangeForPeriod("today"));
+                  setActiveView("today");
+                }}
                 className="transition-all hover:shadow-sm"
-        >
-          Today
-        </Button>
-        <Button
-          variant={activeView === "week" ? "default" : "outline"}
-          size="sm"
-          onClick={() => {
-            setDateRange(getDateRangeForPeriod("week"));
-            setActiveView("week");
-          }}
+              >
+                Today
+              </Button>
+              <Button
+                variant={activeView === "week" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setDateRange(getDateRangeForPeriod("week"));
+                  setActiveView("week");
+                }}
                 className="transition-all hover:shadow-sm"
-        >
-          This Week
-        </Button>
-        <Button
-          variant={activeView === "month" ? "default" : "outline"}
-          size="sm"
-          onClick={() => {
-            setDateRange(getDateRangeForPeriod("month"));
-            setActiveView("month");
-          }}
+              >
+                This Week
+              </Button>
+              <Button
+                variant={activeView === "month" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setDateRange(getDateRangeForPeriod("month"));
+                  setActiveView("month");
+                }}
                 className="transition-all hover:shadow-sm"
-        >
-          This Month
-        </Button>
-        <Button
-          variant={activeView === "three_months" ? "default" : "outline"}
-          size="sm"
-          onClick={() => {
-            setDateRange(getDateRangeForPeriod("three_months"));
-            setActiveView("three_months");
-          }}
+              >
+                This Month
+              </Button>
+              <Button
+                variant={activeView === "three_months" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setDateRange(getDateRangeForPeriod("three_months"));
+                  setActiveView("three_months");
+                }}
                 className="transition-all hover:shadow-sm"
-        >
-          Last 3 Months
-        </Button>
-        <Button
-          variant={activeView === "quarter" ? "default" : "outline"}
-          size="sm"
-          onClick={() => {
-            setDateRange(getDateRangeForPeriod("quarter"));
-            setActiveView("quarter");
-          }}
+              >
+                Last 3 Months
+              </Button>
+              <Button
+                variant={activeView === "quarter" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setDateRange(getDateRangeForPeriod("quarter"));
+                  setActiveView("quarter");
+                }}
                 className="transition-all hover:shadow-sm"
-        >
-          This Quarter
-        </Button>
-        <Button
-          variant={activeView === "year" ? "default" : "outline"}
-          size="sm"
-          onClick={() => {
-            setDateRange(getDateRangeForPeriod("year"));
-            setActiveView("year");
-          }}
+              >
+                This Quarter
+              </Button>
+              <Button
+                variant={activeView === "year" ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  setDateRange(getDateRangeForPeriod("year"));
+                  setActiveView("year");
+                }}
                 className="transition-all hover:shadow-sm"
-        >
-          This Year
-        </Button>
+              >
+                This Year
+              </Button>
             </div>
-      </div>
-      
+          </div>
+
           {/* Custom Date Range Filter */}
           <div className="flex flex-wrap items-center gap-4 border-t pt-4">
             <span className="text-sm font-medium text-muted-foreground">Custom Range:</span>
             <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <span className="text-sm">From:</span>
-            <Select
-              value={tempDateRange?.from ? tempDateRange.from.getFullYear().toString() : "2010"}
-              onValueChange={(year) => handleFromDateChange('year', year)}
-            >
+                <Select
+                  value={tempDateRange?.from ? tempDateRange.from.getFullYear().toString() : "2010"}
+                  onValueChange={(year) => handleFromDateChange('year', year)}
+                >
                   <SelectTrigger className="w-[100px] h-8">
-                <SelectValue placeholder="Year" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: new Date().getFullYear() - 2010 + 1 }, (_, i) => new Date().getFullYear() - i).map((year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: new Date().getFullYear() - 2010 + 1 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            <Select
-              value={tempDateRange?.from ? tempDateRange.from.getMonth().toString() : new Date().getMonth().toString()}
-              onValueChange={(month) => handleFromDateChange('month', month)}
-            >
+                <Select
+                  value={tempDateRange?.from ? tempDateRange.from.getMonth().toString() : new Date().getMonth().toString()}
+                  onValueChange={(month) => handleFromDateChange('month', month)}
+                >
                   <SelectTrigger className="w-[120px] h-8">
-                <SelectValue placeholder="Month" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: 12 }, (_, i) => ({
-                  value: i.toString(),
-                  label: new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
-                })).map(({ value, label }) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                    <SelectValue placeholder="Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => ({
+                      value: i.toString(),
+                      label: new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
+                    })).map(({ value, label }) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            <Select
-              value={tempDateRange?.from ? tempDateRange.from.getDate().toString() : new Date().getDate().toString()}
-              onValueChange={(day) => handleFromDateChange('day', day)}
-            >
+                <Select
+                  value={tempDateRange?.from ? tempDateRange.from.getDate().toString() : new Date().getDate().toString()}
+                  onValueChange={(day) => handleFromDateChange('day', day)}
+                >
                   <SelectTrigger className="w-[80px] h-8">
-                <SelectValue placeholder="Day" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from(
-                  { length: getDaysInMonth(
-                    tempDateRange?.from ? tempDateRange.from.getFullYear() : new Date().getFullYear(),
-                    tempDateRange?.from ? tempDateRange.from.getMonth() : new Date().getMonth()
-                  )},
-                  (_, i) => i + 1
-                ).map((day) => (
-                  <SelectItem key={day} value={day.toString()}>
-                    {day}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+                    <SelectValue placeholder="Day" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from(
+                      { length: getDaysInMonth(
+                        tempDateRange?.from ? tempDateRange.from.getFullYear() : new Date().getFullYear(),
+                        tempDateRange?.from ? tempDateRange.from.getMonth() : new Date().getMonth()
+                      )},
+                      (_, i) => i + 1
+                    ).map((day) => (
+                      <SelectItem key={day} value={day.toString()}>
+                        {day}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <span className="text-sm">To:</span>
-            <Select
-              value={tempDateRange?.to ? tempDateRange.to.getFullYear().toString() : new Date().getFullYear().toString()}
-              onValueChange={(year) => handleToDateChange('year', year)}
-            >
+                <Select
+                  value={tempDateRange?.to ? tempDateRange.to.getFullYear().toString() : new Date().getFullYear().toString()}
+                  onValueChange={(year) => handleToDateChange('year', year)}
+                >
                   <SelectTrigger className="w-[100px] h-8">
-                <SelectValue placeholder="Year" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i).map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            <Select
-              value={tempDateRange?.to ? tempDateRange.to.getMonth().toString() : new Date().getMonth().toString()}
-              onValueChange={(month) => handleToDateChange('month', month)}
-            >
+                <Select
+                  value={tempDateRange?.to ? tempDateRange.to.getMonth().toString() : new Date().getMonth().toString()}
+                  onValueChange={(month) => handleToDateChange('month', month)}
+                >
                   <SelectTrigger className="w-[120px] h-8">
-                <SelectValue placeholder="Month" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from({ length: 12 }, (_, i) => ({
-                  value: i.toString(),
-                  label: new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
-                })).map(({ value, label }) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                    <SelectValue placeholder="Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 12 }, (_, i) => ({
+                      value: i.toString(),
+                      label: new Date(2000, i, 1).toLocaleString('default', { month: 'long' })
+                    })).map(({ value, label }) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-            <Select
-              value={tempDateRange?.to ? tempDateRange.to.getDate().toString() : new Date().getDate().toString()}
-              onValueChange={(day) => handleToDateChange('day', day)}
-            >
+                <Select
+                  value={tempDateRange?.to ? tempDateRange.to.getDate().toString() : new Date().getDate().toString()}
+                  onValueChange={(day) => handleToDateChange('day', day)}
+                >
                   <SelectTrigger className="w-[80px] h-8">
-                <SelectValue placeholder="Day" />
-              </SelectTrigger>
-              <SelectContent>
-                {Array.from(
-                  { length: getDaysInMonth(
-                    tempDateRange?.to ? tempDateRange.to.getFullYear() : new Date().getFullYear(),
-                    tempDateRange?.to ? tempDateRange.to.getMonth() : new Date().getMonth()
-                  )},
-                  (_, i) => i + 1
-                ).map((day) => (
-                  <SelectItem key={day} value={day.toString()}>
-                    {day}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+                    <SelectValue placeholder="Day" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from(
+                      { length: getDaysInMonth(
+                        tempDateRange?.to ? tempDateRange.to.getFullYear() : new Date().getFullYear(),
+                        tempDateRange?.to ? tempDateRange.to.getMonth() : new Date().getMonth()
+                      )},
+                      (_, i) => i + 1
+                    ).map((day) => (
+                      <SelectItem key={day} value={day.toString()}>
+                        {day}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClear}
+                  className="h-8 transition-all hover:shadow-sm"
+                >
+                  Clear
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleSubmit}
+                  className="h-8 transition-all hover:shadow-sm"
+                >
+                  Apply Filter
+                </Button>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClear}
-                  className="h-8 transition-all hover:shadow-sm"
-            >
-              Clear
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              onClick={handleSubmit}
-                  className="h-8 transition-all hover:shadow-sm"
-            >
-              Apply Filter
-            </Button>
-          </div>
-        </div>
-      </div>
-      
           {/* Advanced Filters and Chart Controls */}
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-sm font-medium text-muted-foreground">Filters:</span>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" size="sm" className="h-8">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="h-8">
                     <Search className="mr-2 h-3 w-3" />
                     Advanced Filters
-                  {(selectedProduct !== "all" || selectedReason !== "all" || selectedCategory !== "all") && (
-                    <Badge variant="secondary" className="ml-2 px-1.5 py-0">
-                      {(selectedProduct !== "all" ? 1 : 0) + 
-                       (selectedReason !== "all" ? 1 : 0) + 
-                       (selectedCategory !== "all" ? 1 : 0)}
-                    </Badge>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="start" className="p-4 w-80">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Category</h4>
-                    <Select
-                      value={selectedCategory}
-                      onValueChange={setSelectedCategory}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select category" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Categories</SelectItem>
-                        {categories.map((category) => (
-                          <SelectItem key={category} value={category}>
-                            {category}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    {(selectedProduct !== "all" || selectedReason !== "all" || selectedCategory !== "all") && (
+                      <Badge variant="secondary" className="ml-2 px-1.5 py-0">
+                        {(selectedProduct !== "all" ? 1 : 0) + 
+                         (selectedReason !== "all" ? 1 : 0) + 
+                         (selectedCategory !== "all" ? 1 : 0)}
+                      </Badge>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="p-4 w-80">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <h4 className="font-medium">Category</h4>
+                      <Select
+                        value={selectedCategory}
+                        onValueChange={setSelectedCategory}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Categories</SelectItem>
+                          {categories.map((category) => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h4 className="font-medium">Product</h4>
+                      <Select
+                        value={selectedProduct}
+                        onValueChange={setSelectedProduct}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select product" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Products</SelectItem>
+                          {productStats.map((product) => (
+                            <SelectItem key={product.name} value={product.name}>
+                              {product.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h4 className="font-medium">Disposal Reason</h4>
+                      <Select
+                        value={selectedReason}
+                        onValueChange={setSelectedReason}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select reason" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Reasons</SelectItem>
+                          {allReasons.map((reason) => (
+                            <SelectItem key={reason} value={reason}>
+                              {reason}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="flex justify-between pt-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedProduct("all")
+                          setSelectedReason("all")
+                          setSelectedCategory("all")
+                        }}
+                      >
+                        Reset filters
+                      </Button>
+                      <Button size="sm">Apply</Button>
+                    </div>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Product</h4>
-                    <Select
-                      value={selectedProduct}
-                      onValueChange={setSelectedProduct}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select product" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Products</SelectItem>
-                        {productStats.map((product) => (
-                          <SelectItem key={product.name} value={product.name}>
-                            {product.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <h4 className="font-medium">Disposal Reason</h4>
-                    <Select
-                      value={selectedReason}
-                      onValueChange={setSelectedReason}
-                    >
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select reason" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All Reasons</SelectItem>
-                        {allReasons.map((reason) => (
-                          <SelectItem key={reason} value={reason}>
-                            {reason}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="flex justify-between pt-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setSelectedProduct("all")
-                        setSelectedReason("all")
-                        setSelectedCategory("all")
-                      }}
-                    >
-                      Reset filters
-                    </Button>
-                    <Button size="sm">Apply</Button>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-        </div>
-        
+                </PopoverContent>
+              </Popover>
+            </div>
+
             {/* Chart Type Controls */}
-        <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-muted-foreground">Chart Type:</span>
-          <Button
-            variant={chartType === "area" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setChartType("area")}
+              <Button
+                variant={chartType === "area" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setChartType("area")}
                 className="h-8 px-2.5 transition-all hover:shadow-sm"
-          >
-            <Layers className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={chartType === "bar" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setChartType("bar")}
+              >
+                <Layers className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={chartType === "bar" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setChartType("bar")}
                 className="h-8 px-2.5 transition-all hover:shadow-sm"
-          >
-            <BarChart3 className="h-4 w-4" />
-          </Button>
-          <Button
-            variant={chartType === "line" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setChartType("line")}
+              >
+                <BarChart3 className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={chartType === "line" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setChartType("line")}
                 className="h-8 px-2.5 transition-all hover:shadow-sm"
-          >
-            <LineChartIcon className="h-4 w-4" />
-          </Button>
+              >
+                <LineChartIcon className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
