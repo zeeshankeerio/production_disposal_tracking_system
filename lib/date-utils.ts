@@ -19,11 +19,11 @@ export function toLocalTime(date: Date | string | undefined): Date {
 }
 
 /**
- * Gets current time in user's local timezone
- * @returns Current Date object in local timezone
+ * Gets the current time in local timezone
+ * @returns Current time as Date object
  */
 export function getCurrentLocalTime(): Date {
-  return new Date(new Date().toLocaleString('en-US', { timeZone: DEFAULT_TIMEZONE }));
+  return new Date();
 }
 
 /**
@@ -143,13 +143,21 @@ export function parseDateFromDatabase(dateString: string | null | undefined): Da
   }
   
   try {
-    // If the date string is already in Eastern time format (like "6/19/2025, 8:22:34 PM")
-    // we need to ensure it's properly converted to Eastern timezone
+    // If the date string is already in Eastern time format
+    const match = dateString.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
+    if (match) {
+      // Parse as if it's in Eastern time
+      const [_, year, month, day, hour, minute, second] = match;
+      // Create a Date object and treat it as Eastern time
+      return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second));
+    }
+    
+    // For other formats, parse normally and ensure it's in Eastern time
     const parsedDate = new Date(dateString);
     if (!isNaN(parsedDate.getTime())) {
-      // Convert to Eastern timezone to ensure consistency
-      return new Date(parsedDate.toLocaleString('en-US', { timeZone: DEFAULT_TIMEZONE }));
+      return toEastern(parsedDate);
     }
+    
     return getCurrentLocalTime();
   } catch (error) {
     console.error("Error parsing date from database:", error, "Date string:", dateString);
@@ -158,13 +166,21 @@ export function parseDateFromDatabase(dateString: string | null | undefined): Da
 }
 
 /**
- * Converts a date to an ISO string format for database storage
- * @param date The date to convert
- * @returns ISO string format of the date
+ * Creates a timestamp in Eastern timezone
+ * @returns Formatted date string in Eastern timezone
  */
-export function dateToISOString(date: Date | undefined): string | null {
-  if (!date) return null;
-  return date.toLocaleString('en-US', { timeZone: DEFAULT_TIMEZONE });
+export function createEasternTimestamp(): string {
+  const now = new Date();
+  return now.toLocaleString('en-US', { 
+    timeZone: DEFAULT_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  }).replace(/(\d+)\/(\d+)\/(\d+),\s(\d+):(\d+):(\d+)/, '$3-$1-$2 $4:$5:$6');
 }
 
 /**
@@ -175,7 +191,7 @@ export function dateToISOString(date: Date | undefined): string | null {
 export function isoStringToDate(isoString: string | null | undefined): Date | undefined {
   if (!isoString) return undefined;
   try {
-    return new Date(isoString);
+    return toEastern(new Date(isoString));
   } catch (error) {
     console.error("Invalid date string:", isoString);
     return undefined;
@@ -189,7 +205,6 @@ export function isoStringToDate(isoString: string | null | undefined): Date | un
  * @returns Date object in Eastern timezone
  */
 export function toEastern(date: Date): Date {
-  // Use proper timezone conversion instead of manual hour adjustment
   return new Date(date.toLocaleString('en-US', { timeZone: DEFAULT_TIMEZONE }));
 }
 
@@ -200,11 +215,8 @@ export function toEastern(date: Date): Date {
  * @returns Date object in UTC
  */
 export function fromEastern(date: Date): Date {
-  // Create a new date object and convert from Eastern to UTC
-  const utcDate = new Date();
   const easternTime = date.toLocaleString('en-US', { timeZone: DEFAULT_TIMEZONE });
-  const utcTime = new Date(easternTime);
-  return utcTime;
+  return new Date(easternTime);
 }
 
 /**
@@ -269,13 +281,8 @@ export function formatDateForDisplay(
  */
 export function prepareDateForSubmission(date: Date | string | undefined): string {
   const localDate = toLocalTime(date);
-  // Convert to ISO string without timezone offset
   return localDate.toLocaleString('en-US', { timeZone: DEFAULT_TIMEZONE });
 }
 
-// Maintain backward compatibility with existing code
-export const toNewYorkTime = toLocalTime;
+// Export formatDate as formatEastern for backward compatibility
 export const formatEastern = formatDate;
-export const createEasternTimestamp = createTimestamp;
-export const formatDateForTextDatabase = formatDateForDatabase;
-export const getCurrentEasternTime = getCurrentLocalTime;

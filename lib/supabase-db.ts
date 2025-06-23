@@ -5,7 +5,7 @@ import {
 } from "@/lib/types"
 import { createServerSupabaseClient } from "./supabase"
 import { handleSupabaseError } from "./supabase"
-import { fromEastern, formatDateForTextDatabase, createEasternTimestamp, parseDateFromDatabase } from '@/lib/date-utils';
+import { fromEastern, formatDateForDatabase, createEasternTimestamp, parseDateFromDatabase } from '@/lib/date-utils';
 
 // Products API
 export const getProducts = async (): Promise<Product[]> => {
@@ -149,7 +149,7 @@ const formatDateValue = (value: any): string => {
   try {
     // Use the improved date utilities for consistent timezone handling
     // Works with existing TEXT date fields in database
-    return formatDateForTextDatabase(value);
+    return formatDateForDatabase(value);
   } catch (error) {
     console.error('Error formatting date:', error);
     throw new Error('Invalid date format');
