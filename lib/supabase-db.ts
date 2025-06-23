@@ -269,15 +269,14 @@ export const createDisposalEntry = async (entry: Omit<DisposalEntry, "id">): Pro
   try {
     const supabase = createServerSupabaseClient()
     
-    // Use the improved date utilities for consistent US Eastern timezone handling
-    // Works with existing TEXT date fields in database
+    // Use the same timestamp for both date and created_at
     const easternTimestamp = createEasternTimestamp();
     
     const { data, error } = await supabase
       .from('disposal_entries')
       .insert({
         staff_name: entry.staff_name,
-        date: formatDateValue(entry.date),
+        date: easternTimestamp, // Set to same timestamp as created_at
         product_id: entry.product_id,
         product_name: entry.product_name,
         quantity: entry.quantity,

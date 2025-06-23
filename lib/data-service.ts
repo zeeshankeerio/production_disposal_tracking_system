@@ -96,10 +96,12 @@ export const useDisposalEntries = () => {
 
   // Add a new disposal entry
   const addDisposalEntry = (entry: Omit<DisposalEntry, "id" | "created_at">) => {
+    const currentTime = new Date()
     const newEntry: DisposalEntry = {
       ...entry,
       id: generateId(),
-      created_at: new Date(),
+      date: currentTime, // Set date to current time to match created_at
+      created_at: currentTime,
     }
     setEntries((prev) => [newEntry, ...prev])
     return newEntry
