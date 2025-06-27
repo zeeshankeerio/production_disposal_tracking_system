@@ -455,78 +455,137 @@ export default function DashboardPage() {
   
   // Update the date range handlers to ensure proper type handling
   const handleFromDateChange = (type: 'year' | 'month' | 'day', value: string) => {
-    const currentDate = tempDateRange?.from || new Date();
-    const newDate = toEastern(new Date(currentDate));
-    
-    switch(type) {
-      case 'year':
-        newDate.setFullYear(parseInt(value));
-        break;
-      case 'month':
-        newDate.setMonth(parseInt(value));
-        break;
-      case 'day':
-        newDate.setDate(parseInt(value));
-        break;
-    }
-    
-    // If to date is not set or is the same as from date, update both
-    if (!tempDateRange?.to || isSameDay(newDate, toEastern(new Date(tempDateRange.to)))) {
-      setTempDateRange({ from: newDate, to: newDate });
-    } else {
-      setTempDateRange((prev: DateRange | undefined) => prev ? { ...prev, from: newDate } : { from: newDate, to: newDate });
+    try {
+      const currentDate = tempDateRange?.from || new Date();
+      const validCurrentDate = new Date(currentDate);
+      
+      // Validate the current date before processing
+      if (isNaN(validCurrentDate.getTime())) {
+        console.warn('Invalid current date in handleFromDateChange:', currentDate);
+        return;
+      }
+      
+      const newDate = toEastern(validCurrentDate);
+      
+      switch(type) {
+        case 'year':
+          newDate.setFullYear(parseInt(value));
+          break;
+        case 'month':
+          newDate.setMonth(parseInt(value));
+          break;
+        case 'day':
+          newDate.setDate(parseInt(value));
+          break;
+      }
+      
+      // If to date is not set or is the same as from date, update both
+      if (!tempDateRange?.to) {
+        setTempDateRange({ from: newDate, to: newDate });
+      } else {
+        try {
+          const validToDate = new Date(tempDateRange.to);
+          if (!isNaN(validToDate.getTime()) && isSameDay(newDate, toEastern(validToDate))) {
+            setTempDateRange({ from: newDate, to: newDate });
+          } else {
+            setTempDateRange((prev: DateRange | undefined) => prev ? { ...prev, from: newDate } : { from: newDate, to: newDate });
+          }
+        } catch (error) {
+          console.error('Error processing to date in handleFromDateChange:', error);
+          setTempDateRange({ from: newDate, to: newDate });
+        }
+      }
+    } catch (error) {
+      console.error('Error in handleFromDateChange:', error);
     }
   };
 
   const handleToDateChange = (type: 'year' | 'month' | 'day', value: string) => {
-    const currentDate = tempDateRange?.to || new Date();
-    const newDate = toEastern(new Date(currentDate));
-    
-    switch(type) {
-      case 'year':
-        newDate.setFullYear(parseInt(value));
-        break;
-      case 'month':
-        newDate.setMonth(parseInt(value));
-        break;
-      case 'day':
-        newDate.setDate(parseInt(value));
-        break;
-    }
-    
-    // If from date is not set, set it to the same date
-    if (!tempDateRange?.from) {
-      setTempDateRange({ from: newDate, to: newDate });
-    } else {
-      setTempDateRange((prev: DateRange | undefined) => prev ? { ...prev, to: newDate } : { from: newDate, to: newDate });
+    try {
+      const currentDate = tempDateRange?.to || new Date();
+      const validCurrentDate = new Date(currentDate);
+      
+      // Validate the current date before processing
+      if (isNaN(validCurrentDate.getTime())) {
+        console.warn('Invalid current date in handleToDateChange:', currentDate);
+        return;
+      }
+      
+      const newDate = toEastern(validCurrentDate);
+      
+      switch(type) {
+        case 'year':
+          newDate.setFullYear(parseInt(value));
+          break;
+        case 'month':
+          newDate.setMonth(parseInt(value));
+          break;
+        case 'day':
+          newDate.setDate(parseInt(value));
+          break;
+      }
+      
+      // If from date is not set, set it to the same date
+      if (!tempDateRange?.from) {
+        setTempDateRange({ from: newDate, to: newDate });
+      } else {
+        setTempDateRange((prev: DateRange | undefined) => prev ? { ...prev, to: newDate } : { from: newDate, to: newDate });
+      }
+    } catch (error) {
+      console.error('Error in handleToDateChange:', error);
     }
   };
   
   // Add the submit handler
   const handleSubmit = () => {
-    if (tempDateRange?.from) {
-      const fromDate = toEastern(new Date(tempDateRange.from));
-      fromDate.setHours(0, 0, 0, 0);
-      
-      const toDate = tempDateRange.to ? toEastern(new Date(tempDateRange.to)) : fromDate;
-      toDate.setHours(23, 59, 59, 999);
-      
-      setDateRange({ from: fromDate, to: toDate });
+    try {
+      if (tempDateRange?.from) {
+        const validFromDate = new Date(tempDateRange.from);
+        if (isNaN(validFromDate.getTime())) {
+          console.warn('Invalid from date in handleSubmit:', tempDateRange.from);
+          return;
+        }
+        
+        const fromDate = toEastern(validFromDate);
+        fromDate.setHours(0, 0, 0, 0);
+        
+        let toDate = fromDate;
+        if (tempDateRange.to) {
+          const validToDate = new Date(tempDateRange.to);
+          if (!isNaN(validToDate.getTime())) {
+            toDate = toEastern(validToDate);
+          }
+        }
+        toDate.setHours(23, 59, 59, 999);
+        
+        setDateRange({ from: fromDate, to: toDate });
+      }
+    } catch (error) {
+      console.error('Error in handleSubmit:', error);
     }
   };
 
   // Update the handleClear function
   const handleClear = () => {
-    const now = new Date();
-    const today = toEastern(now);
-    today.setHours(23, 59, 59, 999);
-    
-    const startDate = new Date(2010, 0, 1); // January 1, 2010
-    startDate.setHours(0, 0, 0, 0);
-    
-    setTempDateRange({ from: startDate, to: today });
-    setDateRange({ from: startDate, to: today });
-    setActiveView("all");
+    try {
+      const now = new Date();
+      if (isNaN(now.getTime())) {
+        console.warn('Invalid current date in handleClear');
+        return;
+      }
+      
+      const today = toEastern(now);
+      today.setHours(23, 59, 59, 999);
+      
+      const startDate = new Date(2010, 0, 1); // January 1, 2010
+      startDate.setHours(0, 0, 0, 0);
+      
+      setTempDateRange({ from: startDate, to: today });
+      setDateRange({ from: startDate, to: today });
+      setActiveView("all");
+    } catch (error) {
+      console.error('Error in handleClear:', error);
+    }
   };
   
   // Process data for dashboard when entries change

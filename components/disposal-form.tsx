@@ -43,7 +43,7 @@ import { Combobox, ComboboxOption } from "@/components/ui/combobox"
 import { SimpleDatePicker } from "@/components/ui/simple-date-picker"
 import { DatePickerWrapper } from "@/components/ui/date-picker-wrapper"
 import { DatePickerWrapper as ClientDatePicker } from "@/components/ui/client-pickers"
-import { prepareDateForSubmission, toEastern, fromEastern, formatDate } from "@/lib/date-utils"
+import { prepareDateForSubmission, toEastern, formatDate, getCurrentLocalTime } from "@/lib/date-utils"
 import { formatShift } from "@/lib/utils"
 
 // Common disposal reasons
@@ -102,7 +102,7 @@ export function DisposalForm() {
   const [selectedReasons, setSelectedReasons] = useState<string[]>([])
   const [cartEntries, setCartEntries] = useState<CartEntry[]>([])
   const [commonFields, setCommonFields] = useState<CommonFields>({
-    date: toEastern(new Date()),
+    date: getCurrentLocalTime(),
     shift: "morning",
     staff_name: "",
   })
@@ -113,7 +113,7 @@ export function DisposalForm() {
     defaultValues: {
       product_name: "",
       quantity: 0,
-      date: toEastern(new Date()),
+      date: getCurrentLocalTime(),
       shift: "morning",
       staff_name: commonFields.staff_name,
       reason: "",
@@ -150,6 +150,16 @@ export function DisposalForm() {
   }, [commonFields.staff_name])
 
   const addToCart = (data: DisposalFormValues) => {
+    // Validate all required fields first
+    if (!data.date || !data.reason || !data.product_name || !data.staff_name) {
+      toast({
+        title: "Error",
+        description: "All required fields must be filled",
+        variant: "destructive",
+      })
+      return
+    }
+
     // Validate quantity
     const quantity = Number(data.quantity)
     if (isNaN(quantity) || quantity <= 0) {
@@ -162,11 +172,22 @@ export function DisposalForm() {
     }
 
     // Validate date
-    const disposalDate = data.date ? toEastern(new Date(data.date)) : toEastern(new Date())
-    if (isNaN(disposalDate.getTime())) {
+    const dateInput = new Date(data.date)
+    if (isNaN(dateInput.getTime())) {
       toast({
         title: "Error",
         description: "Invalid disposal date",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Convert to Eastern timezone
+    const disposalDate = toEastern(dateInput)
+    if (isNaN(disposalDate.getTime())) {
+      toast({
+        title: "Error",
+        description: "Error converting date to Eastern timezone",
         variant: "destructive",
       })
       return
@@ -294,8 +315,16 @@ export function DisposalForm() {
           throw new Error("Invalid quantity value")
         }
 
-        // Validate dates in EST
-        const disposalDate = commonFields.date ? toEastern(new Date(commonFields.date)) : null
+        // Validate and convert dates to Eastern timezone
+        let disposalDate: Date | null = null;
+        
+        if (commonFields.date) {
+          const dateInput = new Date(commonFields.date);
+          if (!isNaN(dateInput.getTime())) {
+            disposalDate = toEastern(dateInput);
+          }
+        }
+        
         if (!disposalDate || isNaN(disposalDate.getTime())) {
           throw new Error("Invalid disposal date")
         }
@@ -324,7 +353,7 @@ export function DisposalForm() {
       form.reset({
         product_name: "",
         quantity: 0,
-        date: toEastern(new Date()),
+        date: getCurrentLocalTime(),
         shift: "morning",
         staff_name: "",
         reason: "",

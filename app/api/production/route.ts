@@ -3,11 +3,16 @@ import * as db from "@/lib/supabase-db"
 import { ApiResponse, ProductionEntry } from "@/lib/types"
 import { revalidatePath } from "next/cache"
 
+import { formatDateForDatabase } from '@/lib/date-utils';
+
 // Helper to properly serialize dates for API responses
 const serializeEntry = (entry: ProductionEntry): any => {
   return {
     ...entry,
-    date: entry.date instanceof Date ? entry.date.toISOString() : entry.date,
+    date: entry.date instanceof Date ? formatDateForDatabase(entry.date) : entry.date,
+    expiration_date: 'expiration_date' in entry && entry.expiration_date instanceof Date 
+      ? formatDateForDatabase(entry.expiration_date) 
+      : entry.expiration_date,
   };
 };
 

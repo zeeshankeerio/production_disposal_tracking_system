@@ -202,12 +202,26 @@ export default function ProductionPage() {
   
   // Group production by date
   const productionByDate = filteredProductionEntries.reduce((acc, entry) => {
-    const date = format(new Date(entry.date), "MMM dd")
-    if (!acc[date]) {
-      acc[date] = 0
+    try {
+      const dateObj = new Date(entry.date);
+      if (isNaN(dateObj.getTime())) {
+        console.warn('Invalid date in production entry:', entry.id, entry.date);
+        return acc;
+      }
+      const date = dateObj.toLocaleDateString('en-US', {
+        timeZone: 'America/New_York',
+        month: 'short',
+        day: '2-digit'
+      });
+      if (!acc[date]) {
+        acc[date] = 0
+      }
+      acc[date] += entry.quantity
+      return acc
+    } catch (error) {
+      console.error('Error processing date in productionByDate:', error, entry.id);
+      return acc;
     }
-    acc[date] += entry.quantity
-    return acc
   }, {} as Record<string, number>)
   
   // Convert to array for chart
@@ -303,11 +317,28 @@ export default function ProductionPage() {
         entry.product_name,
         category,
         entry.quantity,
-        format(new Date(entry.date), "yyyy-MM-dd"),
+        (() => {
+          try {
+            const date = new Date(entry.date);
+            return !isNaN(date.getTime()) ? date.toISOString().split('T')[0] : 'Invalid Date';
+          } catch (error) {
+            console.error('Error formatting production date for CSV:', error, entry.id);
+            return 'Invalid Date';
+          }
+        })(),
         entry.staff_name,
         formatShift(entry.shift),
         entry.notes || "",
-        entry.expiration_date ? format(new Date(entry.expiration_date), "yyyy-MM-dd") : ""
+        (() => {
+          try {
+            if (!entry.expiration_date) return "";
+            const date = new Date(entry.expiration_date);
+            return !isNaN(date.getTime()) ? date.toISOString().split('T')[0] : 'Invalid Date';
+          } catch (error) {
+            console.error('Error formatting expiration date for CSV:', error, entry.id);
+            return 'Invalid Date';
+          }
+        })()
       ]
       csvRows.push(values.map(value => typeof value === 'string' && value.includes(',') ? `"${value}"` : value).join(','))
     }

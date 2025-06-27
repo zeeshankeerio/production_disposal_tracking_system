@@ -169,6 +169,19 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
   // Function to add a production entry
   const addProductionEntry = useCallback(async (entry: any) => {
     try {
+      // Input validation
+      if (!entry) {
+        throw new Error("Entry data is required")
+      }
+      
+      if (!entry.product_name || !entry.quantity || !entry.date || !entry.staff_name) {
+        throw new Error("Required fields are missing")
+      }
+      
+      if (typeof entry.quantity !== 'number' || entry.quantity <= 0) {
+        throw new Error("Quantity must be a positive number")
+      }
+      
       if (USE_MOCK_DATA) {
         // Add to mock data
         const newEntry = {

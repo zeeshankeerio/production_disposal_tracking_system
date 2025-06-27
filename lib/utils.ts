@@ -28,7 +28,6 @@ export function formatDate(
   try {
     // Handle the case where dateString might be undefined or null despite the check above
     if (dateString === undefined || dateString === null) {
-      console.warn("Date is undefined or null")
       return "No date"
     }
     
@@ -36,6 +35,11 @@ export function formatDate(
     
     // If it's a string, handle it as potentially being in Eastern time format
     if (typeof dateString === 'string') {
+      // Handle empty strings
+      if (dateString.trim() === '') {
+        return "No date"
+      }
+      
       // Check if it's in the format "YYYY-MM-DD HH:MM:SS" (our stored format)
       const match = dateString.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
       if (match) {
@@ -48,6 +52,11 @@ export function formatDate(
         date = new Date(dateString);
       }
     } else {
+      // Check if it's already an invalid Date object
+      if (isNaN(dateString.getTime())) {
+        console.warn("Invalid Date object provided:", dateString)
+        return "Invalid date"
+      }
       date = dateString;
     }
     
@@ -92,8 +101,8 @@ export function formatDate(
       });
     }
     
-    // Handle custom format strings (like "PPP p" from date-fns)
-    if (formatType === 'PPP p') {
+    // Handle specific format strings
+    if (formatType === 'PPP p' || formatType === 'PPpp') {
       return easternDate.toLocaleString('en-US', {
         timeZone: 'America/New_York',
         year: 'numeric',
@@ -102,6 +111,24 @@ export function formatDate(
         hour: '2-digit',
         minute: '2-digit',
         hour12: true
+      });
+    }
+    
+    if (formatType === 'medium') {
+      return easternDate.toLocaleDateString('en-US', {
+        timeZone: 'America/New_York',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+    
+    if (formatType === 'short') {
+      return easternDate.toLocaleDateString('en-US', {
+        timeZone: 'America/New_York',
+        year: '2-digit',
+        month: 'numeric',
+        day: 'numeric'
       });
     }
     

@@ -5,7 +5,7 @@ import {
 } from "@/lib/types"
 import { createServerSupabaseClient } from "./supabase"
 import { handleSupabaseError } from "./supabase"
-import { fromEastern, formatDateForTextDatabase, createEasternTimestamp, parseDateFromDatabase } from '@/lib/date-utils';
+import { formatDateForDatabase, createTimestamp, parseDateFromDatabase } from '@/lib/date-utils';
 
 // Products API
 export const getProducts = async (): Promise<Product[]> => {
@@ -142,14 +142,14 @@ export const clearProducts = async (): Promise<boolean> => {
   }
 }
 
-// Helper function to format date strings consistently in EST for TEXT fields
+// Helper function to format date strings consistently in Eastern timezone for TEXT fields
 const formatDateValue = (value: any): string => {
   if (!value) return '';
   
   try {
     // Use the improved date utilities for consistent timezone handling
     // Works with existing TEXT date fields in database
-    return formatDateForTextDatabase(value);
+    return formatDateForDatabase(value);
   } catch (error) {
     console.error('Error formatting date:', error);
     throw new Error('Invalid date format');
@@ -184,7 +184,7 @@ export const createProductionEntry = async (entry: Omit<ProductionEntry, "id">):
     
     // Use the improved date utilities for consistent US Eastern timezone handling
     // Works with existing TEXT date fields in database
-    const easternTimestamp = createEasternTimestamp();
+    const easternTimestamp = createTimestamp();
     
     const { data, error } = await supabase
       .from('production_entries')
@@ -271,7 +271,7 @@ export const createDisposalEntry = async (entry: Omit<DisposalEntry, "id">): Pro
     
     // Use the improved date utilities for consistent US Eastern timezone handling
     // Works with existing TEXT date fields in database
-    const easternTimestamp = createEasternTimestamp();
+    const easternTimestamp = createTimestamp();
     
     const { data, error } = await supabase
       .from('disposal_entries')

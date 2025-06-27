@@ -42,7 +42,7 @@ import { Combobox, ComboboxOption } from "@/components/ui/combobox"
 import { SimpleDatePicker } from "@/components/ui/simple-date-picker"
 import { DatePickerWrapper } from "@/components/ui/date-picker-wrapper"
 import { DatePickerWrapper as ClientDatePicker } from "@/components/ui/client-pickers"
-import { prepareDateForSubmission, toEastern, fromEastern, formatDate } from "@/lib/date-utils"
+import { prepareDateForSubmission, toEastern, formatDate, getCurrentLocalTime } from "@/lib/date-utils"
 import { formatShift } from "@/lib/utils"
 
 const productionSchema = z.object({
@@ -84,7 +84,7 @@ export function ProductionForm() {
   const [selectedProduct, setSelectedProduct] = useState<string | null>(null)
   const [cartEntries, setCartEntries] = useState<CartEntry[]>([])
   const [commonFields, setCommonFields] = useState<CommonFields>({
-    date: toEastern(new Date()),
+    date: getCurrentLocalTime(),
     shift: "morning",
     staff_name: "",
   })
@@ -95,11 +95,15 @@ export function ProductionForm() {
     defaultValues: {
       product_name: "",
       quantity: 0,
-      date: toEastern(new Date()),
+      date: getCurrentLocalTime(),
       shift: "morning",
       staff_name: "",
       notes: "",
-      expiration_date: toEastern(new Date(new Date().setDate(new Date().getDate() + 7))),
+      expiration_date: (() => {
+        const expDate = new Date();
+        expDate.setDate(expDate.getDate() + 7);
+        return toEastern(expDate);
+      })(),
     },
   })
 
@@ -124,20 +128,61 @@ export function ProductionForm() {
     // Debug log to check incoming data
     console.log("Adding to cart:", data);
 
-    // 1. Capture potentially undefined value
-    const rawExpirationDate = data.expiration_date;
+    // Validate all required dates first
+    if (!data.date || !data.expiration_date) {
+      toast({
+        title: "Error",
+        description: "Production date and expiration date are required",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // 2. Define a safe/fallback default
-    const safeExpirationDate = (rawExpirationDate !== undefined && rawExpirationDate !== null)
-      ? toEastern(new Date(rawExpirationDate))
-      : toEastern(new Date(new Date().setDate(new Date().getDate() + 7))); // Default to 7 days from now
+    // Validate production date
+    const productionDate = new Date(data.date);
+    if (isNaN(productionDate.getTime())) {
+      toast({
+        title: "Error",
+        description: "Invalid production date",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // 3. Validate the safe date
-    if (isNaN(safeExpirationDate.getTime())) {
-      console.error("Invalid expiration date:", rawExpirationDate);
+    // Validate expiration date
+    const expirationDate = new Date(data.expiration_date);
+    if (isNaN(expirationDate.getTime())) {
       toast({
         title: "Error",
         description: "Invalid expiration date",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Ensure expiration date is after production date
+    if (expirationDate <= productionDate) {
+      toast({
+        title: "Error",
+        description: "Expiration date must be after production date",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Convert to Eastern timezone safely
+    let safeExpirationDate: Date;
+    try {
+      safeExpirationDate = toEastern(expirationDate);
+      // Validate the converted date
+      if (isNaN(safeExpirationDate.getTime())) {
+        throw new Error('Invalid expiration date after timezone conversion');
+      }
+    } catch (error) {
+      console.error('Error converting expiration date to Eastern:', error);
+      toast({
+        title: "Error",
+        description: "Failed to process expiration date",
         variant: "destructive",
       });
       return;
@@ -162,7 +207,11 @@ export function ProductionForm() {
       product_name: "",
       quantity: 0,
       notes: "",
-      expiration_date: toEastern(new Date(new Date().setDate(new Date().getDate() + 7))),
+      expiration_date: (() => {
+        const expDate = new Date();
+        expDate.setDate(expDate.getDate() + 7);
+        return toEastern(expDate);
+      })(),
     })
     
     // Clear selected product
@@ -243,12 +292,54 @@ export function ProductionForm() {
           throw new Error(`Product not found: ${entry.product_name}`)
         }
 
-        // Validate dates in EST
-        const productionDate = commonFields.date ? toEastern(new Date(commonFields.date)) : null
-        const expirationDate = entry.expiration_date ? toEastern(new Date(entry.expiration_date)) : null
+        // Validate and convert dates to Eastern timezone
+        let productionDate: Date | null = null;
+        let expirationDate: Date | null = null;
+
+        // Validate production date
+        if (commonFields.date) {
+          const prodDateInput = new Date(commonFields.date);
+          if (!isNaN(prodDateInput.getTime())) {
+            try {
+              productionDate = toEastern(prodDateInput);
+              // Double-check the converted date is valid
+              if (isNaN(productionDate.getTime())) {
+                console.error('Production date became invalid after timezone conversion');
+                productionDate = null;
+              }
+            } catch (error) {
+              console.error('Error converting production date to Eastern:', error);
+              productionDate = null;
+            }
+          }
+        }
 
         if (!productionDate || isNaN(productionDate.getTime())) {
           throw new Error("Invalid production date")
+        }
+
+        // Validate expiration date (parse from ISO string)
+        if (entry.expiration_date) {
+          // Log for debugging
+          console.log('Processing expiration_date:', entry.expiration_date);
+          const expDateInput = new Date(entry.expiration_date);
+          console.log('Parsed expiration date:', expDateInput);
+          if (!isNaN(expDateInput.getTime())) {
+            try {
+              expirationDate = toEastern(expDateInput);
+              console.log('Converted to Eastern:', expirationDate);
+              // Double-check the converted date is valid
+              if (isNaN(expirationDate.getTime())) {
+                console.error('Expiration date became invalid after timezone conversion');
+                expirationDate = null;
+              }
+            } catch (error) {
+              console.error('Error converting expiration date to Eastern:', error);
+              expirationDate = null;
+            }
+          } else {
+            console.error('Invalid expiration date after parsing:', expDateInput);
+          }
         }
 
         if (!expirationDate || isNaN(expirationDate.getTime())) {
@@ -265,10 +356,10 @@ export function ProductionForm() {
           product_id: selectedProductData.id,
           product_name: entry.product_name,
           quantity: entry.quantity,
-          date: productionDate, // Keep as Date object in EST
+          date: prepareDateForSubmission(productionDate), // Format properly for submission
           shift: commonFields.shift,
           staff_name: commonFields.staff_name,
-          expiration_date: expirationDate.toISOString(),
+          expiration_date: prepareDateForSubmission(expirationDate), // Format properly for submission
           notes: entry.notes || "",
         }
 
@@ -282,20 +373,24 @@ export function ProductionForm() {
       // Clear the cart
       setCartEntries([])
       
-      // Reset all form fields to their default values in EST
+      // Reset all form fields to their default values in Eastern timezone
       form.reset({
         product_name: "",
         quantity: 0,
-        date: toEastern(new Date()),
+        date: getCurrentLocalTime(),
         shift: "morning",
         staff_name: "",
         notes: "",
-        expiration_date: toEastern(new Date(new Date().setDate(new Date().getDate() + 7))),
+        expiration_date: (() => {
+          const expDate = new Date();
+          expDate.setDate(expDate.getDate() + 7);
+          return toEastern(expDate);
+        })(),
       })
       
-      // Reset common fields in EST
+      // Reset common fields in Eastern timezone
       setCommonFields({
-        date: toEastern(new Date()),
+        date: getCurrentLocalTime(),
         shift: "morning",
         staff_name: "",
       })
@@ -525,6 +620,22 @@ export function ProductionForm() {
               {cartEntries.map((entry) => {
                 // Debug log for each entry
                 console.log("Rendering cart entry:", entry);
+                
+                // Safe date formatting to prevent errors
+                let expiresText = "Invalid Date";
+                try {
+                  const expDate = new Date(entry.expiration_date);
+                  if (!isNaN(expDate.getTime())) {
+                    expiresText = expDate.toLocaleDateString('en-US', {
+                      timeZone: 'America/New_York',
+                      month: 'short',
+                      day: 'numeric', 
+                      year: 'numeric'
+                    });
+                  }
+                } catch (error) {
+                  console.error('Error formatting expiration date for display:', error);
+                }
 
                 return (
                   <div
@@ -534,7 +645,7 @@ export function ProductionForm() {
                     <div className="flex-1">
                       <p className="font-medium">{entry.product_name}</p>
                       <p className="text-sm text-muted-foreground">
-                        {entry.quantity} units • Expires: {formatDate(entry.expiration_date, "MMM d, yyyy")}
+                        {entry.quantity} units • Expires: {expiresText}
                       </p>
                       {entry.notes && (
                         <p className="text-sm text-muted-foreground">

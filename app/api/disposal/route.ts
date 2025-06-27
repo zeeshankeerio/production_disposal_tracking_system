@@ -3,6 +3,7 @@ import * as db from "@/lib/supabase-db"
 import { ApiResponse, DisposalEntry } from "@/lib/types"
 import { revalidatePath } from "next/cache"
 import { isValid } from "date-fns"
+import { formatDateForDatabase } from '@/lib/date-utils';
 
 // Helper function to validate disposal entry
 const validateDisposalEntry = (entry: any): { isValid: boolean; error?: string } => {
@@ -28,7 +29,7 @@ const validateDisposalEntry = (entry: any): { isValid: boolean; error?: string }
 // Helper function to serialize entry dates
 const serializeEntry = (entry: DisposalEntry) => ({
   ...entry,
-  date: entry.date instanceof Date ? entry.date.toISOString() : entry.date
+  date: entry.date instanceof Date ? formatDateForDatabase(entry.date) : entry.date
 })
 
 // GET all disposal entries

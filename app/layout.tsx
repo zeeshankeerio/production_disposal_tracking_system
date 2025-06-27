@@ -4,6 +4,7 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/providers/theme-provider"
 import { DataProvider } from "@/components/providers/data-provider"
 import { Toaster } from "@/components/ui/toaster"
+import { EnhancedErrorBoundary } from "@/components/enhanced-error-boundary"
 import Script from "next/script"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -30,10 +31,12 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <DataProvider>
-            <main className="w-full min-h-screen">{children}</main>
-            <Toaster />
-          </DataProvider>
+          <EnhancedErrorBoundary>
+            <DataProvider>
+              <main className="w-full min-h-screen">{children}</main>
+              <Toaster />
+            </DataProvider>
+          </EnhancedErrorBoundary>
         </ThemeProvider>
         
         {/* Script to seed database on first load */}

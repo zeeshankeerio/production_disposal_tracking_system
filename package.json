@@ -1,17 +1,25 @@
 {
-  "name": "my-v0-project",
-  "version": "0.1.0",
+  "name": "production-tracker",
+  "version": "1.0.0",
   "private": true,
+  "description": "A comprehensive production tracking application for bakeries and food service operations",
+  "keywords": ["production", "tracking", "bakery", "food-service", "inventory", "dashboard"],
+  "author": "Production Tracker Team",
+  "license": "MIT",
   "scripts": {
     "dev": "next dev",
     "prebuild": "node scripts/check-env.js",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "type-check": "tsc --noEmit",
     "setup-db": "node setup-database.js",
     "test-db": "node test-supabase-connection.js",
     "check-env": "node scripts/check-env.js",
-    "vercel-build": "node scripts/check-env.js && next build"
+    "vercel-build": "node scripts/check-env.js && next build",
+    "clean": "rm -rf .next out node_modules/.cache",
+    "analyze": "ANALYZE=true npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "latest",

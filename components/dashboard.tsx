@@ -255,9 +255,18 @@ export function Dashboard() {
     const productionByDay = filteredProduction?.reduce(
       (acc, entry) => {
         if (entry?.date) {
-          const date = new Date(entry.date);
-          const dateStr = format(date, "yyyy-MM-dd");
-          acc[dateStr] = (acc[dateStr] || 0) + (entry.quantity || 0);
+          try {
+            const date = new Date(entry.date);
+            // Validate the date before formatting
+            if (!isNaN(date.getTime())) {
+              const dateStr = date.toISOString().split('T')[0]; // Use native formatting instead of date-fns
+              acc[dateStr] = (acc[dateStr] || 0) + (entry.quantity || 0);
+            } else {
+              console.warn('Invalid date in production entry:', entry.id, entry.date);
+            }
+          } catch (error) {
+            console.error('Error processing production entry date:', error, entry.id);
+          }
         }
         return acc;
       },
@@ -268,9 +277,18 @@ export function Dashboard() {
     const disposalByDay = filteredDisposal?.reduce(
       (acc, entry) => {
         if (entry?.date) {
-          const date = new Date(entry.date);
-          const dateStr = format(date, "yyyy-MM-dd");
-          acc[dateStr] = (acc[dateStr] || 0) + (entry.quantity || 0);
+          try {
+            const date = new Date(entry.date);
+            // Validate the date before formatting
+            if (!isNaN(date.getTime())) {
+              const dateStr = date.toISOString().split('T')[0]; // Use native formatting instead of date-fns
+              acc[dateStr] = (acc[dateStr] || 0) + (entry.quantity || 0);
+            } else {
+              console.warn('Invalid date in disposal entry:', entry.id, entry.date);
+            }
+          } catch (error) {
+            console.error('Error processing disposal entry date:', error, entry.id);
+          }
         }
         return acc;
       },
