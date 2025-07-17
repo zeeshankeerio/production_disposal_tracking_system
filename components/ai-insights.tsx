@@ -38,6 +38,28 @@ const insightTypeColors = {
   success: "green"
 };
 
+// [1] Add utility functions for robust statistics at the top (after imports)
+function median(arr: number[]): number {
+  if (!arr.length) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+function iqr(arr: number[]): number {
+  if (arr.length < 4) return 0;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const q1 = sorted[Math.floor(sorted.length / 4)];
+  const q3 = sorted[Math.floor(sorted.length * 3 / 4)];
+  return q3 - q1;
+}
+function robustZ(value: number, arr: number[]): number {
+  if (!arr.length) return 0;
+  const med = median(arr);
+  const iqrVal = iqr(arr);
+  if (iqrVal === 0) return 0;
+  return 0.6745 * (value - med) / iqrVal;
+}
+
 interface AIInsightsProps {
   dateFrom?: Date
   dateTo?: Date
@@ -456,40 +478,32 @@ export function AIInsights({ dateFrom, dateTo, selectedProduct }: AIInsightsProp
         }
       }
       
-      // Anomaly detection
-      const dailyRates = new Map<string, number>()
-      
-      filteredEntries.production.forEach(entry => {
-        const date = formatDate(entry.date, "short")
-        const current = dailyRates.get(date) || 0
-        dailyRates.set(date, current + entry.quantity)
-      })
-      
+      // Robust anomaly detection (days with robust z-score > 2 or < -2)
+      const dailyDisposal = new Map<string, number>();
       filteredEntries.disposal.forEach(entry => {
-        const date = formatDate(entry.date, "short")
-        const current = dailyRates.get(date) || 0
-        dailyRates.set(date, current - entry.quantity)
-      })
-
-      const rates = Array.from(dailyRates.values())
-      const mean = rates.reduce((sum, rate) => sum + rate, 0) / rates.length
-      const stdDev = Math.sqrt(
-        rates.reduce((sum, rate) => sum + Math.pow(rate - mean, 2), 0) / rates.length
-      )
-
-      const anomalies = rates.filter(rate => Math.abs(rate - mean) > 2 * stdDev)
-      if (anomalies.length > 0) {
+        const date = formatDate(entry.date, "short");
+        dailyDisposal.set(date, (dailyDisposal.get(date) || 0) + entry.quantity);
+      });
+      const disposalVals = Array.from(dailyDisposal.values());
+      const med = median(disposalVals);
+      const iqrVal = iqr(disposalVals);
+      const robustAnomalies: { date: string; value: number; z: number }[] = [];
+      dailyDisposal.forEach((value, date) => {
+        const z = robustZ(value, disposalVals);
+        if (Math.abs(z) > 2) robustAnomalies.push({ date, value, z });
+      });
+      if (robustAnomalies.length > 0) {
         newInsights.push({
-          id: "anomalies",
-          title: "Unusual Activity Detected",
-          description: `Found ${anomalies.length} days with unusual disposal patterns.`,
+          id: "robust-anomaly-days",
+          title: "Robust Anomaly Days",
+          description: `Detected ${robustAnomalies.length} days with outlier disposal (robust z-score > 2). See anomaly table below.`,
           type: "warning",
           priority: "high",
           date: new Date().toISOString(),
           category: "anomaly",
           icon: <AlertTriangle className="h-4 w-4" />,
-          data: { anomalies: anomalies.length }
-        })
+          data: { robustAnomalies, med, iqrVal, confidence: disposalVals.length >= 10 ? "high" : "low" }
+        });
       }
       
       // Filter insights based on the selected filter
@@ -668,9 +682,27 @@ export function AIInsights({ dateFrom, dateTo, selectedProduct }: AIInsightsProp
               <div className="flex items-start space-x-2">
                 {getIconForType(insight)}
                 <div className="flex-1">
-                  <AlertTitle className="flex items-center justify-between">
-                    <span>{insight.title}</span>
-                    {getBadgeForPriority(insight)}
+                  <AlertTitle className="flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-1">
+                      {insight.title}
+                      <span className="text-muted-foreground cursor-help" title={
+                        insight.id === 'robust-anomaly-days' ?
+                          'Anomalies are detected using robust z-score (median/IQR). Outliers are days with |z| > 2.' :
+                        insight.id.includes('trend') ?
+                          'Trend is calculated by comparing disposal rates in two halves of the period. Confidence is higher with more data.' :
+                        insight.id.includes('prediction') ?
+                          'Prediction uses linear regression. Confidence interval is shown if enough data.' :
+                        'Insight is based on statistical analysis of your data. Confidence depends on data volume and variance.'
+                      }>
+                        <Info className="h-3 w-3" />
+                      </span>
+                    </span>
+                    {/* Reliability/confidence badge */}
+                    {insight.data?.confidence && (
+                      <Badge variant={insight.data.confidence === 'high' ? 'default' : insight.data.confidence === 'medium' ? 'secondary' : 'outline'} className="ml-2">
+                        {insight.data.confidence.charAt(0).toUpperCase() + insight.data.confidence.slice(1)} Confidence
+                      </Badge>
+                    )}
                   </AlertTitle>
                   <AlertDescription>{insight.description}</AlertDescription>
                   {insight.data?.rate && (
@@ -693,6 +725,46 @@ export function AIInsights({ dateFrom, dateTo, selectedProduct }: AIInsightsProp
             </Alert>
                   )}
                 </div>
+      {insights.length > 0 && insights.some(i => i.id === 'robust-anomaly-days' && i.data?.robustAnomalies?.length > 0) && (
+  (() => {
+    const anomalyInsight = insights.find(i => i.id === 'robust-anomaly-days');
+    const anomalies = anomalyInsight?.data?.robustAnomalies ?? [];
+    const med = anomalyInsight?.data?.med ?? '-';
+    const iqrVal = anomalyInsight?.data?.iqrVal ?? '-';
+    const confidence = anomalyInsight?.data?.confidence ?? '-';
+    if (!anomalies.length) return null;
+    return (
+      <div className="mt-6">
+        <div className="font-medium text-xs mb-1 flex items-center gap-2">
+          Robust Anomaly Table
+          <span className="text-muted-foreground" title="Days with disposal values that are outliers based on robust z-score (median/IQR)">(?)</span>
+        </div>
+        <div className="overflow-x-auto rounded border bg-background">
+          <table className="min-w-[400px] border text-xs">
+            <thead className="bg-background">
+              <tr>
+                <th className="px-2 py-1 border-b">Date</th>
+                <th className="px-2 py-1 border-b text-right">Disposal</th>
+                <th className="px-2 py-1 border-b text-right">Robust z-score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {anomalies.map((row: any) => (
+                <tr key={row.date}>
+                  <td className="px-2 py-1 border-b whitespace-nowrap">{row.date}</td>
+                  <td className="px-2 py-1 border-b text-right whitespace-nowrap">{row.value}</td>
+                  <td className="px-2 py-1 border-b text-right whitespace-nowrap">{row.z?.toFixed ? row.z.toFixed(2) : row.z ?? '-'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="text-xs text-muted-foreground mt-1">Median: {med}, IQR: {iqrVal}</div>
+        <div className="text-xs text-muted-foreground mt-1">Confidence: {confidence} (based on data volume)</div>
+      </div>
+    );
+  })()
+)}
       </CardContent>
     </Card>
   )

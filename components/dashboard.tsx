@@ -28,6 +28,8 @@ import { AlertCircle, ArrowDown, ArrowUp, BarChart3, PieChartIcon, TrendingDown,
 import { Badge } from "@/components/ui/badge"
 import { DatabaseSetupGuide } from "./database-setup-guide"
 import type { DateRange } from "react-day-picker"
+import { generateProductWasteReport } from "@/lib/report-utils";
+import type { ProductWasteReport } from "@/lib/report-utils";
 
 // Colors for charts
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8", "#FF6B6B", "#6B66FF"]
@@ -565,8 +567,12 @@ function DashboardContent({
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="performance">Performance</TabsTrigger>
+          <TabsTrigger value="ai">AI Insights</TabsTrigger>
+          <TabsTrigger value="entries">Entries</TabsTrigger>
           <TabsTrigger value="production">Production</TabsTrigger>
           <TabsTrigger value="disposal">Disposal</TabsTrigger>
+          <TabsTrigger value="waste">Waste Analytics</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2">
@@ -763,8 +769,230 @@ function DashboardContent({
             </Card>
           </div>
         </TabsContent>
+        <TabsContent value="waste" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Waste Analytics Report</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Waste Analytics Visualizations */}
+              <WasteAnalyticsVisuals
+                productionEntries={productionEntries}
+                disposalEntries={disposalEntries}
+                products={products}
+                fromDate={dateRange.from ?? new Date()}
+                toDate={dateRange.to ?? new Date()}
+              />
+              {/* Table and Export */}
+              <WasteAnalyticsExportWrapper
+                productionEntries={productionEntries}
+                disposalEntries={disposalEntries}
+                products={products}
+                fromDate={dateRange.from ?? new Date()}
+                toDate={dateRange.to ?? new Date()}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+        <TabsContent value="performance" className="space-y-4">
+          <Card><CardHeader><CardTitle>Performance</CardTitle></CardHeader><CardContent>Performance coming soon.</CardContent></Card>
+        </TabsContent>
+        <TabsContent value="ai" className="space-y-4">
+          <Card><CardHeader><CardTitle>AI Insights</CardTitle></CardHeader><CardContent>AI Insights coming soon.</CardContent></Card>
+        </TabsContent>
+        <TabsContent value="entries" className="space-y-4">
+          <Card><CardHeader><CardTitle>Entries</CardTitle></CardHeader><CardContent>Entries coming soon.</CardContent></Card>
+        </TabsContent>
       </Tabs>
     </div>
   )
+}
+
+// WasteAnalyticsExportWrapper wraps the table and export button
+function WasteAnalyticsExportWrapper({ productionEntries, disposalEntries, products, fromDate, toDate }: {
+  productionEntries: any[];
+  disposalEntries: any[];
+  products: any[];
+  fromDate: Date;
+  toDate: Date;
+}) {
+  const [sortKey, setSortKey] = useState<keyof ProductWasteReport>('total_discarded');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const report = useMemo(() => generateProductWasteReport({ productionEntries, disposalEntries, products, fromDate, toDate }), [productionEntries, disposalEntries, products, fromDate, toDate]);
+  const sorted = useMemo(() => {
+    return [...report].sort((a, b) => {
+      const aVal = a[sortKey];
+      const bVal = b[sortKey];
+      if (typeof aVal === 'string') return sortOrder === 'asc' ? aVal.localeCompare(bVal as string) : (bVal as string).localeCompare(aVal);
+      return sortOrder === 'asc' ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
+    });
+  }, [report, sortKey, sortOrder]);
+  const columns: { key: keyof ProductWasteReport; label: string }[] = [
+    { key: 'product_name', label: 'Product' },
+    { key: 'total_discarded', label: 'Total Discarded' },
+    { key: 'days_discarded', label: 'Days Discarded' },
+    { key: 'avg_per_day', label: 'Average per Day' },
+    { key: 'total_produced', label: 'Total Produced' },
+    { key: 'discard_rate', label: 'Discard Rate (%)' },
+  ];
+  function exportCSV() {
+    const header = columns.map(col => col.label).join(',');
+    const rows = sorted.map(row =>
+      columns.map(col => row[col.key]).join(',')
+    );
+    const csv = [header, ...rows].join('\n');
+    const fromStr = fromDate.toISOString().split('T')[0];
+    const toStr = toDate.toISOString().split('T')[0];
+    const filename = `waste-analytics-${fromStr}_to_${toStr}.csv`;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    // Standard download approach for all modern browsers
+    const link = document.createElement('a');
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+    // For legacy IE support, see: https://stackoverflow.com/a/30832210/1106414
+  }
+  return (
+    <>
+      <div className="mb-2 flex justify-end">
+        <button className="px-3 py-1 rounded bg-primary text-white text-xs hover:bg-primary/90" onClick={exportCSV}>
+          Export CSV
+        </button>
+      </div>
+      <WasteAnalyticsTable
+        report={sorted}
+        columns={columns}
+        sortKey={sortKey}
+        setSortKey={setSortKey}
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
+      />
+    </>
+  );
+}
+// WasteAnalyticsTable now receives report, columns, sortKey, setSortKey, sortOrder, setSortOrder
+function WasteAnalyticsTable({ report, columns, sortKey, setSortKey, sortOrder, setSortOrder }: {
+  report: ProductWasteReport[];
+  columns: { key: keyof ProductWasteReport; label: string }[];
+  sortKey: keyof ProductWasteReport;
+  setSortKey: (k: keyof ProductWasteReport) => void;
+  sortOrder: 'asc' | 'desc';
+  setSortOrder: (o: 'asc' | 'desc') => void;
+}) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="min-w-full border text-sm">
+        <thead>
+          <tr>
+            {columns.map(col => (
+              <th key={col.key} className="px-2 py-1 border-b cursor-pointer" onClick={() => {
+                if (sortKey === col.key) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+                else { setSortKey(col.key); setSortOrder('desc'); }
+              }}>
+                {col.label} {sortKey === col.key ? (sortOrder === 'asc' ? '▲' : '▼') : ''}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {report.map(row => (
+            <tr key={row.product_id}>
+              <td className="px-2 py-1 border-b">{row.product_name}</td>
+              <td className="px-2 py-1 border-b text-right">{row.total_discarded}</td>
+              <td className="px-2 py-1 border-b text-right">{row.days_discarded}</td>
+              <td className="px-2 py-1 border-b text-right">{row.avg_per_day}</td>
+              <td className="px-2 py-1 border-b text-right">{row.total_produced}</td>
+              <td className="px-2 py-1 border-b text-right">{row.discard_rate}%</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      {report.length === 0 && <div className="text-center text-muted-foreground py-4">No data for selected range.</div>}
+    </div>
+  );
+}
+
+// WasteAnalyticsVisuals: new component for charts
+function WasteAnalyticsVisuals({ productionEntries, disposalEntries, products, fromDate, toDate }: {
+  productionEntries: any[];
+  disposalEntries: any[];
+  products: any[];
+  fromDate: Date;
+  toDate: Date;
+}) {
+  const report = useMemo(() => generateProductWasteReport({ productionEntries, disposalEntries, products, fromDate, toDate }), [productionEntries, disposalEntries, products, fromDate, toDate]);
+  // Top 10 by total discarded
+  const topDiscarded = useMemo(() => [...report].sort((a, b) => b.total_discarded - a.total_discarded).slice(0, 10), [report]);
+  // Top 10 by discard rate
+  const topDiscardRate = useMemo(() => [...report].filter(r => r.total_produced > 0).sort((a, b) => b.discard_rate - a.discard_rate).slice(0, 10), [report]);
+  // Pie chart data (all products)
+  const pieData = useMemo(() => report.filter(r => r.total_discarded > 0).map(r => ({ name: r.product_name, value: r.total_discarded })), [report]);
+  return (
+    <div className="grid gap-6 md:grid-cols-2">
+      {/* Bar Chart: Most Discarded Products */}
+      <div className="h-[300px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={topDiscarded} layout="vertical" margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+            <XAxis type="number" />
+            <YAxis type="category" dataKey="product_name" width={100} tick={{ fontSize: 12 }} />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="total_discarded" fill="#FF8042" name="Total Discarded" radius={[0, 4, 4, 0]}>
+              {topDiscarded.map((entry, index) => (
+                <Cell key={`cell-bar-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+      {/* Pie Chart: Share of Discarded Units */}
+      <div className="h-[300px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={pieData}
+              cx="50%"
+              cy="50%"
+              labelLine={false}
+              label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+              outerRadius={80}
+              fill="#8884d8"
+              dataKey="value"
+            >
+              {pieData.map((entry, index) => (
+                <Cell key={`cell-pie-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip />
+            <Legend />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+      {/* Bar Chart: Discard Rate (%) by Product */}
+      <div className="h-[300px] md:col-span-2">
+        <ResponsiveContainer width="100%" height="100%">
+          <BarChart data={topDiscardRate} layout="vertical" margin={{ top: 5, right: 30, left: 100, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+            <XAxis type="number" />
+            <YAxis type="category" dataKey="product_name" width={100} tick={{ fontSize: 12 }} />
+            <Tooltip />
+            <Legend />
+            <Bar dataKey="discard_rate" fill="#0088FE" name="Discard Rate (%)" radius={[0, 4, 4, 0]}>
+              {topDiscardRate.map((entry, index) => (
+                <Cell key={`cell-rate-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
 }
 

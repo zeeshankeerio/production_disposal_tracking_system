@@ -456,7 +456,7 @@ export function EntriesListView({
                         <SelectContent>
                           {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
                             <SelectItem key={month} value={month.toString().padStart(2, '0')}>
-                              {formatDate(new Date(2000, month - 1), 'MMMM')}
+                              {format(new Date(2000, month - 1), 'MMM')}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -515,7 +515,7 @@ export function EntriesListView({
                         <SelectContent>
                           {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
                             <SelectItem key={month} value={month.toString().padStart(2, '0')}>
-                              {formatDate(new Date(2000, month - 1), 'MMMM')}
+                              {format(new Date(2000, month - 1), 'MMM')}
                             </SelectItem>
                           ))}
                         </SelectContent>
